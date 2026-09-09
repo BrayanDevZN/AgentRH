@@ -27,12 +27,11 @@ jobs:
               with:
                 python-version: "3.14"
 
-            - run: python -m tests.unit.logs
-            - run: pip install python-dotenv
+            - name: logs tests
 
-            - run: python -m tests.unit.logs
-            - run: pip install python-dotenv
-
+              run: python -m tests.unit.logs
+        
+            
             - name: config test
               env:
 
@@ -43,4 +42,7 @@ jobs:
                 origin: ${{ vars.ORIGIN }}
                 rate_limit: ${{ vars.RATE_LIMIT }}
                 global_rate_limit: ${{ vars.GLOBAL_RATE_LIMIT }}
-              run: python -m tests.unit.config
+              
+              run: |
+               pip install python-dotenv
+               python -m tests.unit.config
