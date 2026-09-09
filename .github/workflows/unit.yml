@@ -51,6 +51,13 @@ jobs:
             - name: connection db tests
               env:
                 url: ${{ vars.URL }}
+                redis_port: ${{ vars.REDIS_PORT }}
+                redis_host: ${{ vars.REDIS_HOST }}
+                sing: ${{ vars.SING }}
+                origin: ${{ vars.ORIGIN }}
+                rate_limit: ${{ vars.RATE_LIMIT }}
+                global_rate_limit: ${{ vars.GLOBAL_RATE_LIMIT }}
+              
 
               run: |
                 pip install sqlalchemy psycopg[binary] asyncpg python-dotenv
