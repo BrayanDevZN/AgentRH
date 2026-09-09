@@ -29,7 +29,18 @@ jobs:
 
             - run: python -m tests.unit.logs
             - run: pip install python-dotenv
-            - run: python -m tests.unit.config
 
+            - run: python -m tests.unit.logs
+            - run: pip install python-dotenv
 
+            - name: config test
+              env:
 
+                redis_port: ${{ vars.REDIS_PORT }}
+                redis_host: ${{ vars.REDIS_HOST }}
+                url: ${{ vars.URL }}
+                sing: ${{ vars.SING }}
+                origin: ${{ vars.ORIGIN }}
+                rate_limit: ${{ vars.RATE_LIMIT }}
+                global_rate_limit: ${{ vars.GLOBAL_RATE_LIMIT }}
+              run: python -m tests.unit.config
