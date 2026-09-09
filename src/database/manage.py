@@ -3,7 +3,7 @@ Junta os modulos e facilita a importação
 """
 
 #Importa a conexão do banco
-from src.database.conenction.engine import ConenctionDb
+from src.database.connection.engine import ConenctionDb
 
 
 

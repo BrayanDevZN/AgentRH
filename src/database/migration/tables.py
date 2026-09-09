@@ -24,3 +24,9 @@ async def migration_db(engine:AsyncEngine) -> None:
 
 
         logger.info("Criadas com sucesso!!!")
+
+
+    except Exception as e:
+
+        logger.error(e)
+        raise MigrationDbError(e)

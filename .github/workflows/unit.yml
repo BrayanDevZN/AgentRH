@@ -46,3 +46,13 @@ jobs:
               run: |
                pip install python-dotenv
                python -m tests.unit.config
+
+            - name: connection db tests
+              env:
+                url: ${{ vars.URL }}
+
+              run: |
+                pip install sqlalchemy psycopg[binary] asyncpg python-dotenv
+                python -m tests.unit.connect_db
+
+         

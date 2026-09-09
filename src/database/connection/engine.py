@@ -10,7 +10,7 @@ class ConenctionDbError(Exception):
     pass
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-
+from sqlalchemy import text
 class ConenctionDb:
 
     def __init__(self, url:str)-> None:
@@ -39,7 +39,7 @@ class ConenctionDb:
 
             logger.info("Criando orquestrador de sessoes...")
 
-            self.make_session = async_sessionmaker(bind=self.egnine, expire_on_commit=False)
+            self.make_session = async_sessionmaker(bind=self.engine, expire_on_commit=False)
 
         except Exception as e:
             logger.error(e)
@@ -54,7 +54,7 @@ class ConenctionDb:
 
             async with self.make_session.begin() as session:
 
-                session.execute("SELECT 1;")
+                await session.execute(text("SELECT 1;"))
 
             logger.info("Teste concluido!!!")
 
