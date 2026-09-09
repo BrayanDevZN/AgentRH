@@ -15,7 +15,7 @@ on:
 
 jobs:
 
-    logs:
+    ambient:
 
         runs-on: ubuntu-latest
 
@@ -27,6 +27,7 @@ jobs:
                 python-version: "3.14"
 
             - run: python -m tests.unit.logs
+            - run: python -m tests.unit.config
 
 
 
