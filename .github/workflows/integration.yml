@@ -23,7 +23,7 @@ jobs:
 
             - uses: actions/checkout@v4
             - uses: actions/setup-python@v5
-            - with:
+              with:
                 python-version: "3.14"
 
             - name: database
@@ -36,7 +36,7 @@ jobs:
                     rate_limit: ${{ secrets.RATE_LIMIT }}
                     global_rate_limit: ${{ secrets.GLOBAL_RATE_LIMIT }}
 
-             run: |
+              run: |
                 pip install sqlalchemy psycopg[binary] asyncpg python-dotenv
                 python -m tests.integration.connect_db
                 python -m tests.integration.repository
