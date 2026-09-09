@@ -36,13 +36,13 @@ jobs:
             - name: config test
               env:
 
-                redis_port: ${{ vars.REDIS_PORT }}
-                redis_host: ${{ vars.REDIS_HOST }}
-                url: '${{ vars.URL }}'
-                sing: ${{ vars.SING }}
-                origin: ${{ vars.ORIGIN }}
-                rate_limit: ${{ vars.RATE_LIMIT }}
-                global_rate_limit: ${{ vars.GLOBAL_RATE_LIMIT }}
+                redis_port: ${{ secrets.REDIS_PORT }}
+                redis_host: ${{ secrets.REDIS_HOST }}
+                url: ${{ secrets.URL }}
+                sing: ${{ secrets.SING }}
+                origin: ${{ secrets.ORIGIN }}
+                rate_limit: ${{ secrets.RATE_LIMIT }}
+                global_rate_limit: ${{ secrets.GLOBAL_RATE_LIMIT }}
               
               run: |
                pip install python-dotenv
@@ -50,17 +50,16 @@ jobs:
 
             - name: connection db tests
               env:
-                url: '${{ vars.URL }}'
-                redis_port: ${{ vars.REDIS_PORT }}
-                redis_host: ${{ vars.REDIS_HOST }}
-                sing: ${{ vars.SING }}
-                origin: ${{ vars.ORIGIN }}
-                rate_limit: ${{ vars.RATE_LIMIT }}
-                global_rate_limit: ${{ vars.GLOBAL_RATE_LIMIT }}
+                url: ${{ secrets.URL }}
+                redis_port: ${{ secrets.REDIS_PORT }}
+                redis_host: ${{ secrets.REDIS_HOST }}
+                sing: ${{ secrets.SING }}
+                origin: ${{ secrets.ORIGIN }}
+                rate_limit: ${{ secrets.RATE_LIMIT }}
+                global_rate_limit: ${{ secrets.GLOBAL_RATE_LIMIT }}
               
 
               run: |
                 pip install sqlalchemy psycopg[binary] asyncpg python-dotenv
                 python -m tests.integration.connect_db
 
-         
