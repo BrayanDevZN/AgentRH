@@ -6,6 +6,7 @@ on:
             - main
             - future/database
             - develop
+            - future/cache
         
     pull_request:
         branches:
@@ -19,6 +20,11 @@ jobs:
 
         runs-on: ubuntu-latest
         environment: develop
+        services:
+            redis:
+                image: redis:alpine
+                ports:
+                    - 6379:6379
 
         steps:
 
@@ -41,5 +47,6 @@ jobs:
                 pip install sqlalchemy psycopg[binary] asyncpg python-dotenv
                 python -m tests.integration.connect_db
                 python -m tests.integration.repository
+                python -m tests.integration.cache
               
 
