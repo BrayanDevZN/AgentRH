@@ -19,9 +19,8 @@ class Resumes(Base):
     pdf: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     status: Mapped[Literal["aproved", "recuse", "pending"]] = mapped_column(String(12), nullable=False)
     reason: Mapped[str] = mapped_column(Text, default="null")
-    vancancie: Mapped[Vancancies] = relationship(back_populates="resume")
-    created_at = Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-
+    vancancie: Mapped[Vancancies] = relationship(back_populates="resumes", cascade="all")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
 
 
