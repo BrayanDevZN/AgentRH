@@ -46,7 +46,7 @@ class Environment:
 
             env = os.getenv(name)
 
-            if env is None and env != "redis_password":
+            if env is None and name != "redis_password":
                 msg = f"Expeted enviroin {name}"
                 logger.error(msg)
 

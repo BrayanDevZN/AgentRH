@@ -9,7 +9,7 @@ from src.cache.control import RedisCache
 
 def cache_control(port:int|str, host:str, password:str=None)-> RedisCache:
 
-        client = RedisConnection(port=port, host=host, password=password)
+        client = RedisConnection(port=port, host=host, password=password).run()
 
         return RedisCache(client=client)
 

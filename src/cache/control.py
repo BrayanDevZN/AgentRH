@@ -27,6 +27,7 @@ class RedisCache:
                 with self.client.pipeline(transaction=True) as session:
 
                     session.watch(name)
+                    session.multi()
 
                     session.hset(name=name, mapping=data)
 
@@ -53,6 +54,7 @@ class RedisCache:
                 with self.client.pipeline(transaction=True) as session:
 
                     session.watch(name)
+                    session.multi()
 
                     
 
@@ -92,6 +94,7 @@ class RedisCache:
                 logger.info(f"Tentando incrementar {name}...")
 
                 with self.client.pipeline(transaction=True) as session:
+                    session.multi()
 
                     session.incr(name=name)
                     session.expire(name=name, time=70)
