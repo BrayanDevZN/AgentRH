@@ -16,7 +16,7 @@ class Environment:
 
     def __init__(self)-> None:
 
-        self.envs = ["redis_port", "redis_host", "url", "sing", "origin", "rate_limit", "global_rate_limit"]
+        self.envs = ["redis_port", "redis_host", "url", "sing", "origin", "rate_limit", "global_rate_limit", "redis_password"]
 
 
 
@@ -46,7 +46,7 @@ class Environment:
 
             env = os.getenv(name)
 
-            if env is None:
+            if env is None and env != "redis_password":
                 msg = f"Expeted enviroin {name}"
                 logger.error(msg)
 
