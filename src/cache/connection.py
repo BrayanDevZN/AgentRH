@@ -36,17 +36,29 @@ class RedisConnection:
     #testa conexão
     def _test(self) -> None:
 
-        try:
+        countdown = 0
 
-            logger.info("testando conexão com redis...")
+        while True:
 
-            self.con.ping()
+            try:
 
-        except Exception as e:
-            logger.error(e)
-            raise RedisConnectionError(e)
+                
+                logger.info("testando conexão com redis...")
 
+                self.con.ping()
+                break
 
+            except Exception as e:
+                if countdown <3:
+
+                    logger.warning(f"Houve um erro:{e}, Executando teste novamente...")
+                    countdown +=1
+                    continue
+
+                logger.error(f"Limite de testes excedido, erro: {e}")
+                raise RedisConnection(e)
+            
+     
     #Executa os metodos e retorna conexão
     def run(self) -> Redis:
         self._con()
