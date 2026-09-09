@@ -19,19 +19,20 @@ class UsersDb:
 
 
     #Insere na tabela
-    async def insert(self, name:str, email:str, password:str, cpf:str, gender:Literal["male", "female", "other"],
+    async def insert(self, name:str,age:int, email:str, password:str, cpf:str, gender:Literal["male", "female", "other"],
                      permission:bool = False, role:Literal["user", "admin"] = "user"
                      )-> Users:
 
         try:
 
-            logger.info(f"Criando usaurio {name} {role} com a permissão {"Concedida" if permission else "Negada"}...")
+            logger.info(f"Criando usuario {name} {role} com a permissão {"Concedida" if permission else "Negada"}...")
 
             async with self.eng.begin() as session:
 
                 #Objeto de users preenchido
                 instance = Users(name=name, email=email,password=password, cpf=cpf,
-                                 gender=gender, permission=permission, role=role
+                                 gender=gender, permission=permission, role=role, 
+                                 age=age
                                  )
 
                 session.add(instance)

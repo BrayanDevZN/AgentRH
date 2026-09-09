@@ -1,0 +1,43 @@
+name: integration tests
+
+on:
+    push:
+        branches:
+            - main
+            - future/database
+            - develop
+        
+    pull_request:
+        branches:
+            - main
+            - develop
+        
+
+jobs:
+
+    data:
+
+        runs-on: ubuntu-latest
+
+        steps:
+
+            - uses: actions/checkout@v4
+            - uses: actions/setup-python@v5
+            - with:
+                python-version: "3.14"
+
+            - name: database
+              env:
+                    url: ${{ secrets.URL }}
+                    redis_port: ${{ secrets.REDIS_PORT }}
+                    redis_host: ${{ secrets.REDIS_HOST }}
+                    sing: ${{ secrets.SING }}
+                    origin: ${{ secrets.ORIGIN }}
+                    rate_limit: ${{ secrets.RATE_LIMIT }}
+                    global_rate_limit: ${{ secrets.GLOBAL_RATE_LIMIT }}
+
+             run: |
+                pip install sqlalchemy psycopg[binary] asyncpg python-dotenv
+                python -m tests.integration.connect_db
+              
+

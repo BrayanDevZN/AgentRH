@@ -48,18 +48,4 @@ jobs:
                pip install python-dotenv
                python -m tests.unit.config
 
-            - name: connection db tests
-              env:
-                url: ${{ secrets.URL }}
-                redis_port: ${{ secrets.REDIS_PORT }}
-                redis_host: ${{ secrets.REDIS_HOST }}
-                sing: ${{ secrets.SING }}
-                origin: ${{ secrets.ORIGIN }}
-                rate_limit: ${{ secrets.RATE_LIMIT }}
-                global_rate_limit: ${{ secrets.GLOBAL_RATE_LIMIT }}
-              
-
-              run: |
-                pip install sqlalchemy psycopg[binary] asyncpg python-dotenv
-                python -m tests.integration.connect_db
-
+          

@@ -2,6 +2,7 @@
 Junta os modulos e facilita a importação
 """
 
+
 #Importa a conexão do banco
 from src.database.connection.engine import ConenctionDb
 
@@ -13,9 +14,9 @@ from src.database.migration.tables import migration_db
 
 #Junta os 3 modulos de repository em um
 from sqlalchemy.ext.asyncio import AsyncEngine
-from src.database.repository.users import UsersDb
-from src.database.repository.vancancies import VancanciesDb
-from src.database.repository.resumes import ResumesDb
+from src.database.repository.users import UsersDb, Users
+from src.database.repository.vancancies import VancanciesDb, Vancancies
+from src.database.repository.resumes import ResumesDb, Resumes
 
 class ControlDb:
 
@@ -24,4 +25,5 @@ class ControlDb:
         self.users = UsersDb(engine)
         self.vancancies = VancanciesDb(engine)
         self.resumes = ResumesDb(engine)
-        
+
+
