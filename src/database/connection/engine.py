@@ -11,6 +11,7 @@ class ConenctionDbError(Exception):
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import text
+
 class ConenctionDb:
 
     def __init__(self, url:str)-> None:
