@@ -28,6 +28,7 @@ jobs:
                 python-version: "3.14"
 
             - run: python -m tests.unit.logs
+            - run: pip install python-dotenv
             - run: python -m tests.unit.config
 
 
