@@ -29,10 +29,10 @@ async def test_repository() -> None:
         gender="other",
         age=18
     )
-    print(user_insert.name)
+    print(user_insert)
 
     user_select = await instance_db.users.select(search="id", value=user_insert.id)
-    print(user_select.name)
+    print(user_select)
 
     user_update = await instance_db.users.update(
         search="id",
@@ -40,17 +40,17 @@ async def test_repository() -> None:
         set="permission",
         value=True
     )
-    print(user_update.name)
+    print(user_update)
 
     vancancie_insert = await instance_db.vancancies.insert(
         created_by=user_insert.id,
         name=f"Vaga teste {identify[:20]}",
         description="Descrição da vaga de teste"
     )
-    print(vancancie_insert.name)
+    print(vancancie_insert)
 
     vancancie_select = await instance_db.vancancies.select(search="id", value=vancancie_insert.id)
-    print(vancancie_select.name)
+    print(vancancie_select)
 
     vancancie_update = await instance_db.vancancies.update(
         search="id",
@@ -58,7 +58,7 @@ async def test_repository() -> None:
         set="description",
         value="Descrição atualizada"
     )
-    print(vancancie_update.name)
+    print(vancancie_update)
 
     resume_insert = await instance_db.resumes.insert(
         user_id=user_insert.id,
@@ -68,7 +68,7 @@ async def test_repository() -> None:
     print(resume_insert)
 
     resume_select = await instance_db.resumes.select(search="id", value=resume_insert.id)
-    print(resume_select.name)
+    print(resume_select)
 
     resume_update = await instance_db.resumes.update(
         search="id",
