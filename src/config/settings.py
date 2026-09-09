@@ -27,12 +27,11 @@ class Environment:
         try:
 
             BASE_DIR = Path(__file__).resolve().parent / ".env"
+            from dotenv import load_dotenv
 
-            if os.path.exists(BASE_DIR):
+            load_dotenv (BASE_DIR) if os.path.exists(BASE_DIR) else load_dotenv()
 
-                from dotenv import load_dotenv
-                load_dotenv(BASE_DIR)
-
+               
         except Exception as e:
 
             logger.error(e)
