@@ -47,7 +47,7 @@ class ConenctionDb:
             raise Exception(e)
 
     #testa a conexão
-    async def _test(self) -> None:
+    async def test(self) -> None:
 
         try:
 
@@ -71,8 +71,10 @@ class ConenctionDb:
         self._engine()
         self._session()
 
-        import asyncio
-        asyncio.run(self._test())
+        
+
+    
+    
 
 
 

@@ -47,7 +47,7 @@ class ResumesDb:
             logger.error(e)
             raise ResumesDbError(e)
 
-    async def select(self, search:Literal["id", "user_id", "vancancie_id", "status"],
+    async def select(self, search:Literal["id", "user_id", "vancancie_id"],
                      value:str|int) -> dict|None:
 
 
@@ -59,7 +59,7 @@ class ResumesDb:
                 "id": Resumes.id,
                 "user_id": Resumes.user_id,
                 "vancancie_id": Resumes.vancancie_id,
-                "status": Resumes.status
+                
             }
 
             async with self.eng.begin() as session:

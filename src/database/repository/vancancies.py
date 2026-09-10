@@ -12,6 +12,7 @@ from src.database.models.vancancies import Vancancies
 from src.database.models.resumes import Resumes
 from src.database.repository.serializer import model_to_dict
 from typing import Literal
+
 class VancanciesDbError(Exception):
     pass
 class VancanciesDb:
@@ -45,7 +46,7 @@ class VancanciesDb:
             logger.error(e)
             raise VancanciesDbError(e)
 
-    async def select(self, search:Literal["public_id", "name", "id", "created_by"], value:str|int) -> dict|None:
+    async def select(self, search:Literal["name", "id", "created_by"], value:str|int) -> dict|None:
 
 
         try:
@@ -53,7 +54,7 @@ class VancanciesDb:
             logger.info(f"Buscando vaga pelo {search}...")
 
             items = {
-                "public_id": Vancancies.public_id,
+                
                 "name": Vancancies.name,
                 "id": Vancancies.id,
                 "created_by": Vancancies.created_by
@@ -74,7 +75,7 @@ class VancanciesDb:
             logger.error(e)
             raise VancanciesDbError(e)
 
-    async def update(self, search:Literal["public_id", "name", "id", "created_by"], field:str|int,
+    async def update(self, search:Literal["name", "id", "created_by"], field:str|int,
                      set:Literal["name", "description"], value:str) -> dict:
 
 
@@ -83,7 +84,6 @@ class VancanciesDb:
             logger.info(f"Atualizando {set} da vaga...")
 
             items = {
-                "public_id": Vancancies.public_id,
                 "name": Vancancies.name,
                 "id": Vancancies.id,
                 "created_by": Vancancies.created_by
@@ -117,7 +117,7 @@ class VancanciesDb:
             raise VancanciesDbError(e)
 
 
-    async def delete(self, public_id:str) -> dict:
+    async def delete(self, id:int) -> dict:
 
         try:
 
@@ -125,7 +125,7 @@ class VancanciesDb:
 
             async with self.eng.begin() as session:
 
-                query = delete(Vancancies).where(Vancancies.public_id == public_id)
+                query = delete(Vancancies).where(Vancancies.id == id)
 
                 result = await session.execute(query)
                 return {"deleted": result.rowcount > 0}

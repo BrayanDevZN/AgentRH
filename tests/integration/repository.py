@@ -13,7 +13,7 @@ async def test_repository() -> None:
     instance_connection = ConenctionDb(url=enviroiments["url"])
     instance_connection._engine()
     instance_connection._session()
-    await instance_connection._test()
+    await instance_connection.test()
 
     await migration_db(engine=instance_connection.engine)
 
@@ -81,7 +81,7 @@ async def test_repository() -> None:
     resume_delete = await instance_db.resumes.delete(id=resume_insert["id"])
     print(resume_delete)
 
-    vancancie_delete = await instance_db.vancancies.delete(public_id=str(vancancie_insert["public_id"]))
+    vancancie_delete = await instance_db.vancancies.delete(id=vancancie_insert["id"])
     print(vancancie_delete)
 
     user_delete = await instance_db.users.delete(public_id=str(user_insert["public_id"]))
