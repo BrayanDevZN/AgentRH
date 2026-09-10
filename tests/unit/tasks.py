@@ -22,4 +22,6 @@ def test_tasks() -> None:
 
 
 if __name__ == "__main__":
+    import time
+    time.sleep(10)
     test_tasks()
