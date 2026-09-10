@@ -9,7 +9,7 @@ app_task = TaskControl(host=enviroiments["redis_host"], port=enviroiments["redis
                        password=enviroiments["redis_password"]).run()
 
 
-@app_task.task
+@app_task.task()
 def task() -> None:
 
     print("test")

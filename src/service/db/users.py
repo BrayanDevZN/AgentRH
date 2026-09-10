@@ -5,7 +5,7 @@ Junta o modulo de banco de dados com sua variavel de ambiente e com cache
 from typing import Literal
 
 from src.database.manage import ControlDb
-from src.service.cache import client
+from src.service.cache.control import client_background
 from src.service.db.change_types import ChangeTypes
 from src.service.db.connetion import engine_session
 
@@ -26,10 +26,10 @@ class ControlUsers:
         user = await self.users.insert(**data)
         cache_data = ChangeTypes.to_cache(user)
 
-        await client.hset(name=f"user:public_id:{user['public_id']}", data=cache_data)
-        await client.hset(name=f"user:email:{user['email']}", data=cache_data)
-        await client.hset(name=f"user:cpf:{user['cpf']}", data=cache_data)
-        await client.hset(name=f"user:id:{user['id']}", data=cache_data)
+        await client_background.hset(name=f"user:public_id:{user['public_id']}", data=cache_data)
+        await client_background.hset(name=f"user:email:{user['email']}", data=cache_data)
+        await client_background.hset(name=f"user:cpf:{user['cpf']}", data=cache_data)
+        await client_background.hset(name=f"user:id:{user['id']}", data=cache_data)
 
         return user
 
@@ -50,7 +50,7 @@ class ControlUsers:
             case "cpf":
                 name = f"user:cpf:{value}"
 
-        cache = await client.get(hash=True, name=name)
+        cache = await client_background.get(hash=True, name=name)
 
         if cache:
             return ChangeTypes.from_cache(cache)
@@ -61,10 +61,10 @@ class ControlUsers:
 
         cache_data = ChangeTypes.to_cache(user)
 
-        await client.hset(name=f"user:public_id:{user['public_id']}", data=cache_data)
-        await client.hset(name=f"user:email:{user['email']}", data=cache_data)
-        await client.hset(name=f"user:cpf:{user['cpf']}", data=cache_data)
-        await client.hset(name=f"user:id:{user['id']}", data=cache_data)
+        await client_background.hset(name=f"user:public_id:{user['public_id']}", data=cache_data)
+        await client_background.hset(name=f"user:email:{user['email']}", data=cache_data)
+        await client_background.hset(name=f"user:cpf:{user['cpf']}", data=cache_data)
+        await client_background.hset(name=f"user:id:{user['id']}", data=cache_data)
 
         return user
 
@@ -79,10 +79,10 @@ class ControlUsers:
         if not user:
             return None
 
-        await client.delete(name=f"user:public_id:{user['public_id']}")
-        await client.delete(name=f"user:email:{user['email']}")
-        await client.delete(name=f"user:cpf:{user['cpf']}")
-        await client.delete(name=f"user:id:{user['id']}")
+        await client_background.delete(name=f"user:public_id:{user['public_id']}")
+        await client_background.delete(name=f"user:email:{user['email']}")
+        await client_background.delete(name=f"user:cpf:{user['cpf']}")
+        await client_background.delete(name=f"user:id:{user['id']}")
 
         return user
 
@@ -95,7 +95,7 @@ class ControlUsers:
 
         await self.users.delete(public_id=public_id)
 
-        await client.delete(name=f"user:public_id:{user['public_id']}")
-        await client.delete(name=f"user:email:{user['email']}")
-        await client.delete(name=f"user:cpf:{user['cpf']}")
-        await client.delete(name=f"user:id:{user['id']}")
+        await client_background.delete(name=f"user:public_id:{user['public_id']}")
+        await client_background.delete(name=f"user:email:{user['email']}")
+        await client_background.delete(name=f"user:cpf:{user['cpf']}")
+        await client_background.delete(name=f"user:id:{user['id']}")

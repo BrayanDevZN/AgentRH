@@ -5,7 +5,7 @@ Junta o modulo de banco de dados com sua variavel de ambiente e com cache
 from typing import Literal
 
 from src.database.manage import ControlDb
-from src.service.cache import client
+from src.service.cache.control import client_background
 from src.service.db.change_types import ChangeTypes
 from src.service.db.connetion import engine_session
 
@@ -26,9 +26,9 @@ class ControlResumes:
         resume = await self.resumes.insert(**data)
         cache_data = ChangeTypes.to_cache(resume)
 
-        await client.hset(name=f"resume:id:{resume['id']}", data=cache_data)
-        await client.hset(name=f"resume:user_id:{resume['user_id']}", data=cache_data)
-        await client.hset(name=f"resume:vancancie_id:{resume['vancancie_id']}", data=cache_data)
+        await client_background.hset(name=f"resume:id:{resume['id']}", data=cache_data)
+        await client_background.hset(name=f"resume:user_id:{resume['user_id']}", data=cache_data)
+        await client_background.hset(name=f"resume:vancancie_id:{resume['vancancie_id']}", data=cache_data)
 
         return resume
 
@@ -46,7 +46,7 @@ class ControlResumes:
             case "vancancie_id":
                 name = f"resume:vancancie_id:{value}"
 
-        cache = await client.get(name=name, hash=True)
+        cache = await client_background.get(name=name, hash=True)
 
         if cache:
             return ChangeTypes.from_cache(cache)
@@ -57,9 +57,9 @@ class ControlResumes:
 
         cache_data = ChangeTypes.to_cache(resume)
 
-        await client.hset(name=f"resume:id:{resume['id']}", data=cache_data)
-        await client.hset(name=f"resume:user_id:{resume['user_id']}", data=cache_data)
-        await client.hset(name=f"resume:vancancie_id:{resume['vancancie_id']}", data=cache_data)
+        await client_background.hset(name=f"resume:id:{resume['id']}", data=cache_data)
+        await client_background.hset(name=f"resume:user_id:{resume['user_id']}", data=cache_data)
+        await client_background.hset(name=f"resume:vancancie_id:{resume['vancancie_id']}", data=cache_data)
 
         return resume
 
@@ -74,9 +74,9 @@ class ControlResumes:
         if not resume:
             return None
 
-        await client.delete(name=f"resume:id:{resume['id']}")
-        await client.delete(name=f"resume:user_id:{resume['user_id']}")
-        await client.delete(name=f"resume:vancancie_id:{resume['vancancie_id']}")
+        await client_background.delete(name=f"resume:id:{resume['id']}")
+        await client_background.delete(name=f"resume:user_id:{resume['user_id']}")
+        await client_background.delete(name=f"resume:vancancie_id:{resume['vancancie_id']}")
 
         return resume
 
@@ -89,6 +89,6 @@ class ControlResumes:
 
         await self.resumes.delete(id=id)
 
-        await client.delete(name=f"resume:id:{resume['id']}")
-        await client.delete(name=f"resume:user_id:{resume['user_id']}")
-        await client.delete(name=f"resume:vancancie_id:{resume['vancancie_id']}")
+        await client_background.delete(name=f"resume:id:{resume['id']}")
+        await client_background.delete(name=f"resume:user_id:{resume['user_id']}")
+        await client_background.delete(name=f"resume:vancancie_id:{resume['vancancie_id']}")

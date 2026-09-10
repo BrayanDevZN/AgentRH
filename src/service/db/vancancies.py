@@ -5,7 +5,7 @@ Junta o modulo de banco de dados com sua variavel de ambiente e com cache
 from typing import Literal
 
 from src.database.manage import ControlDb
-from src.service.cache import client
+from src.service.cache.control import client_background
 from src.service.db.change_types import ChangeTypes
 from src.service.db.connetion import engine_session
 
@@ -22,9 +22,9 @@ class ControlVancancies:
         vancancie = await self.vancancies.insert(created_by=created_by, name=name, description=description)
         cache_data = ChangeTypes.to_cache(vancancie)
 
-        await client.hset(name=f"vancancie:id:{vancancie['id']}", data=cache_data)
-        await client.hset(name=f"vancancie:name:{vancancie['name']}", data=cache_data)
-        await client.hset(name=f"vancancie:created_by:{vancancie['created_by']}", data=cache_data)
+        await client_background.hset(name=f"vancancie:id:{vancancie['id']}", data=cache_data)
+        await client_background.hset(name=f"vancancie:name:{vancancie['name']}", data=cache_data)
+        await client_background.hset(name=f"vancancie:created_by:{vancancie['created_by']}", data=cache_data)
 
         return vancancie
 
@@ -42,7 +42,7 @@ class ControlVancancies:
             case "created_by":
                 name = f"vancancie:created_by:{value}"
 
-        cache = await client.get(name=name, hash=True)
+        cache = await client_background.get(name=name, hash=True)
 
         if cache:
             return ChangeTypes.from_cache(cache)
@@ -53,9 +53,9 @@ class ControlVancancies:
 
         cache_data = ChangeTypes.to_cache(vancancie)
 
-        await client.hset(name=f"vancancie:id:{vancancie['id']}", data=cache_data)
-        await client.hset(name=f"vancancie:name:{vancancie['name']}", data=cache_data)
-        await client.hset(name=f"vancancie:created_by:{vancancie['created_by']}", data=cache_data)
+        await client_background.hset(name=f"vancancie:id:{vancancie['id']}", data=cache_data)
+        await client_background.hset(name=f"vancancie:name:{vancancie['name']}", data=cache_data)
+        await client_background.hset(name=f"vancancie:created_by:{vancancie['created_by']}", data=cache_data)
 
         return vancancie
 
@@ -70,9 +70,9 @@ class ControlVancancies:
         if not vancancie:
             return None
 
-        await client.delete(name=f"vancancie:id:{vancancie['id']}")
-        await client.delete(name=f"vancancie:created_by:{vancancie['created_by']}")
-        await client.delete(name=f"vancancie:name:{vancancie['name']}")
+        await client_background.delete(name=f"vancancie:id:{vancancie['id']}")
+        await client_background.delete(name=f"vancancie:created_by:{vancancie['created_by']}")
+        await client_background.delete(name=f"vancancie:name:{vancancie['name']}")
 
         return vancancie
 
@@ -85,6 +85,6 @@ class ControlVancancies:
 
         await self.vancancies.delete(id=id)
 
-        await client.delete(name=f"vancancie:id:{vancancie['id']}")
-        await client.delete(name=f"vancancie:created_by:{vancancie['created_by']}")
-        await client.delete(name=f"vancancie:name:{vancancie['name']}")
+        await client_background.delete(name=f"vancancie:id:{vancancie['id']}")
+        await client_background.delete(name=f"vancancie:created_by:{vancancie['created_by']}")
+        await client_background.delete(name=f"vancancie:name:{vancancie['name']}")
