@@ -62,7 +62,7 @@ class RedisCache:
 
                     result = session.execute()
 
-                    logger.info(name + "encontrado" if result is not None else "não encontrado")
+                    logger.info(name + "" + "encontrado" if result is not None else "não encontrado")
                     return result[0]
 
             except WatchError:
