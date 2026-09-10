@@ -11,5 +11,5 @@ task_app = TaskControl(port=enviroiments["redis_port"], host=enviroiments["redis
 
 
 task_app.conf.imports = (
-    "src.service.cache.task",
+    "src.service.cache.task", "src.service.utils.sender", "src.service.utils.agent"
 )
