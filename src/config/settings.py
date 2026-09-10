@@ -18,7 +18,7 @@ class Environment:
 
         self.envs = ["redis_port", "redis_host", "url", "sing", 
                      "origin", "rate_limit", "global_rate_limit", 
-                     "redis_password", "email_user", "email_password"]
+                     "redis_password", "email_user", "password_user"]
 
 
 
