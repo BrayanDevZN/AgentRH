@@ -44,8 +44,8 @@ jobs:
                 origin: ${{ secrets.ORIGIN }}
                 rate_limit: ${{ secrets.RATE_LIMIT }}
                 global_rate_limit: ${{ secrets.GLOBAL_RATE_LIMIT }}
-                user_email: ${{ secrets.EMAIL_USER }}
-                user_password: ${{ secrets.PASSWORD_USER }}
+                email_user: ${{ secrets.EMAIL_USER }}
+                password_suer: ${{ secrets.PASSWORD_USER }}
               
               run: |
                pip install python-dotenv
