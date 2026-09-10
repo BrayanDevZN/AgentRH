@@ -73,6 +73,12 @@ jobs:
                python -m tests.unit.tasks
                python -m celery -A tests.unit.tasks:app_task inspect ping
 
+            - name: auth
+              run: |
+               pip install PyJWT bcrypt
+               python -m tests.unit.auth
+
+
               
 
 
