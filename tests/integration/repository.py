@@ -31,60 +31,60 @@ async def test_repository() -> None:
     )
     print(user_insert)
 
-    user_select = await instance_db.users.select(search="id", value=user_insert.id)
+    user_select = await instance_db.users.select(search="id", value=user_insert["id"])
     print(user_select)
 
     user_update = await instance_db.users.update(
         search="id",
-        field=user_insert.id,
+        field=user_insert["id"],
         set="permission",
         value=True
     )
     print(user_update)
 
     vancancie_insert = await instance_db.vancancies.insert(
-        created_by=user_insert.id,
+        created_by=user_insert["id"],
         name=f"Vaga teste {identify[:20]}",
         description="Descrição da vaga de teste"
     )
     print(vancancie_insert)
 
-    vancancie_select = await instance_db.vancancies.select(search="id", value=vancancie_insert.id)
+    vancancie_select = await instance_db.vancancies.select(search="id", value=vancancie_insert["id"])
     print(vancancie_select)
 
     vancancie_update = await instance_db.vancancies.update(
         search="id",
-        field=vancancie_insert.id,
+        field=vancancie_insert["id"],
         set="description",
         value="Descrição atualizada"
     )
     print(vancancie_update)
 
     resume_insert = await instance_db.resumes.insert(
-        user_id=user_insert.id,
-        vancancie_id=vancancie_insert.id,
+        user_id=user_insert["id"],
+        vancancie_id=vancancie_insert["id"],
         pdf=b"curriculo teste"
     )
     print(resume_insert)
 
-    resume_select = await instance_db.resumes.select(search="id", value=resume_insert.id)
+    resume_select = await instance_db.resumes.select(search="id", value=resume_insert["id"])
     print(resume_select)
 
     resume_update = await instance_db.resumes.update(
         search="id",
-        field=resume_insert.id,
+        field=resume_insert["id"],
         set="status",
         value="aproved"
     )
     print(resume_update)
 
-    resume_delete = await instance_db.resumes.delete(id=resume_insert.id)
+    resume_delete = await instance_db.resumes.delete(id=resume_insert["id"])
     print(resume_delete)
 
-    vancancie_delete = await instance_db.vancancies.delete(public_id=str(vancancie_insert.public_id))
+    vancancie_delete = await instance_db.vancancies.delete(public_id=str(vancancie_insert["public_id"]))
     print(vancancie_delete)
 
-    user_delete = await instance_db.users.delete(public_id=str(user_insert.public_id))
+    user_delete = await instance_db.users.delete(public_id=str(user_insert["public_id"]))
     print(user_delete)
 
 

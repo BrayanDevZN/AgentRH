@@ -5,7 +5,7 @@ logger = LayerLogger("cache").build()
 """
 Controla redis
 """
-
+import json
 from redis import Redis, WatchError
 
 class RedisCache:
@@ -28,6 +28,7 @@ class RedisCache:
 
                     session.watch(name)
                     session.multi()
+                    
 
                     session.hset(name=name, mapping=data)
 

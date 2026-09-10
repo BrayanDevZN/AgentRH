@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import selectinload
 from src.database.models.vancancies import Vancancies
 from src.database.models.resumes import Resumes
+from src.database.repository.serializer import model_to_dict
 from typing import Literal
 class VancanciesDbError(Exception):
     pass
@@ -21,7 +22,7 @@ class VancanciesDb:
 
 
     #Insere na tabela
-    async def insert(self, created_by:int, name:str, description:str) -> Vancancies:
+    async def insert(self, created_by:int, name:str, description:str) -> dict:
 
         try:
 
@@ -33,8 +34,10 @@ class VancanciesDb:
                 instance = Vancancies(created_by=created_by, name=name, description=description)
 
                 session.add(instance)
+                await session.flush()
+                await session.refresh(instance)
 
-            return instance
+                return model_to_dict(instance)
 
 
         except Exception as e:
@@ -42,7 +45,7 @@ class VancanciesDb:
             logger.error(e)
             raise VancanciesDbError(e)
 
-    async def select(self, search:Literal["public_id", "name", "id", "created_by"], value:str|int) -> Vancancies|None:
+    async def select(self, search:Literal["public_id", "name", "id", "created_by"], value:str|int) -> dict|None:
 
 
         try:
@@ -64,7 +67,7 @@ class VancanciesDb:
 
                 result = result.scalars().first()
 
-            return result
+                return model_to_dict(result) if result is not None else None
 
         except Exception as e:
 
@@ -72,7 +75,7 @@ class VancanciesDb:
             raise VancanciesDbError(e)
 
     async def update(self, search:Literal["public_id", "name", "id", "created_by"], field:str|int,
-                     set:Literal["name", "description"], value:str) -> Vancancies|None:
+                     set:Literal["name", "description"], value:str) -> dict:
 
 
         try:
@@ -94,7 +97,7 @@ class VancanciesDb:
 
                 if vancancie is None:
 
-                    return None
+                    return {}
 
 
                 match set:
@@ -104,7 +107,9 @@ class VancanciesDb:
                     case "description":
                         vancancie.description = value
 
-            return vancancie
+                await session.flush()
+                await session.refresh(vancancie)
+                return model_to_dict(vancancie)
 
         except Exception as e:
 
@@ -112,7 +117,7 @@ class VancanciesDb:
             raise VancanciesDbError(e)
 
 
-    async def delete(self, public_id:str) -> None:
+    async def delete(self, public_id:str) -> dict:
 
         try:
 
@@ -122,7 +127,8 @@ class VancanciesDb:
 
                 query = delete(Vancancies).where(Vancancies.public_id == public_id)
 
-                await session.execute(query)
+                result = await session.execute(query)
+                return {"deleted": result.rowcount > 0}
 
 
         except Exception as e:

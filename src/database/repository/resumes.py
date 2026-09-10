@@ -9,6 +9,7 @@ from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import selectinload
 from src.database.models.resumes import Resumes
+from src.database.repository.serializer import model_to_dict
 from typing import Literal
 class ResumesDbError(Exception):
     pass
@@ -22,7 +23,7 @@ class ResumesDb:
     #Insere na tabela
     async def insert(self, user_id:int, vancancie_id:int, pdf:bytes,
                      status:Literal["aproved", "recuse", "pending"] = "pending",
-                     reason:str = "null") -> Resumes:
+                     reason:str = "null") -> dict:
 
         try:
 
@@ -35,8 +36,10 @@ class ResumesDb:
                                    status=status, reason=reason)
 
                 session.add(instance)
+                await session.flush()
+                await session.refresh(instance)
 
-            return instance
+                return model_to_dict(instance)
 
 
         except Exception as e:
@@ -45,7 +48,7 @@ class ResumesDb:
             raise ResumesDbError(e)
 
     async def select(self, search:Literal["id", "user_id", "vancancie_id", "status"],
-                     value:str|int) -> Resumes|None:
+                     value:str|int) -> dict|None:
 
 
         try:
@@ -67,7 +70,7 @@ class ResumesDb:
 
                 result = result.scalars().first()
 
-            return result
+                return model_to_dict(result) if result is not None else None
 
         except Exception as e:
 
@@ -75,7 +78,7 @@ class ResumesDb:
             raise ResumesDbError(e)
 
     async def update(self, search:Literal["id", "user_id", "vancancie_id"], field:int,
-                     set:Literal["pdf", "status", "reason"], value:bytes|str) -> Resumes|None:
+                     set:Literal["pdf", "status", "reason"], value:bytes|str) -> dict:
 
 
         try:
@@ -96,7 +99,7 @@ class ResumesDb:
 
                 if resume is None:
 
-                    return None
+                    return {}
 
 
                 match set:
@@ -108,7 +111,9 @@ class ResumesDb:
                     case "reason":
                         resume.reason = value
 
-            return resume
+                await session.flush()
+                await session.refresh(resume)
+                return model_to_dict(resume)
 
         except Exception as e:
 
@@ -116,7 +121,7 @@ class ResumesDb:
             raise ResumesDbError(e)
 
 
-    async def delete(self, id:int) -> None:
+    async def delete(self, id:int) -> dict:
 
         try:
 
@@ -126,7 +131,8 @@ class ResumesDb:
 
                 query = delete(Resumes).where(Resumes.id == id)
 
-                await session.execute(query)
+                result = await session.execute(query)
+                return {"deleted": result.rowcount > 0}
 
 
         except Exception as e:
