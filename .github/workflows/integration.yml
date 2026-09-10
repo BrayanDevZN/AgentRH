@@ -49,5 +49,6 @@ jobs:
                 python -m tests.integration.repository
                 pip install Redis
                 python -m tests.integration.cache
+                python -m tests.integration.control_db
               
 
