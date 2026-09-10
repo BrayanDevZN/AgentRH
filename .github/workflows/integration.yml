@@ -44,6 +44,7 @@ jobs:
                     global_rate_limit: ${{ secrets.GLOBAL_RATE_LIMIT }}
                     email_user: ${{ secrets.EMAIL_USER }}
                     password_user: ${{ secrets.PASSWORD_USER }}
+                    open_ai_key: ${{ secrets.OPEN_AI_KEY}}
 
               run: |
                 pip install sqlalchemy psycopg[binary] asyncpg python-dotenv
