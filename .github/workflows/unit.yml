@@ -6,6 +6,7 @@ on:
             - main
             - develop
             - future/database
+            - future/sender
 
     pull_request:
         branches:
