@@ -68,7 +68,7 @@ jobs:
             - name: tasks
               run: |
                pip install celery redis
-               python -m celery -A src.tests.unit.tasks:app_task worker --loglevel=INFO --detach
+               python -m celery -A tests.unit.tasks:app_task worker --loglevel=INFO --detach
                python -m tests.unit.tasks
                python -m celery -A tests.unit.tasks:app_task inspect ping
 
