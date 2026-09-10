@@ -45,7 +45,7 @@ jobs:
                 rate_limit: ${{ secrets.RATE_LIMIT }}
                 global_rate_limit: ${{ secrets.GLOBAL_RATE_LIMIT }}
                 email_user: ${{ secrets.EMAIL_USER }}
-                password_suer: ${{ secrets.PASSWORD_USER }}
+                password_user: ${{ secrets.PASSWORD_USER }}
               
               run: |
                pip install python-dotenv
