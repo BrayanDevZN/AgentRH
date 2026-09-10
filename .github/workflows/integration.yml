@@ -50,7 +50,7 @@ jobs:
                 pip install sqlalchemy psycopg[binary] asyncpg python-dotenv
                 python -m tests.integration.connect_db
                 python -m tests.integration.repository
-                pip install Redis
+                pip install Redis celery
                 python -m tests.integration.cache
                 python -m tests.integration.control_db
               
