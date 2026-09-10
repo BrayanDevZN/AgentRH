@@ -7,6 +7,7 @@ on:
             - develop
             - future/database
             - future/sender
+            - task/celery
 
     pull_request:
         branches:
@@ -21,6 +22,11 @@ jobs:
 
         runs-on: ubuntu-latest
         environment: develop
+        services:
+          redis:
+            image: redis:alpine
+            ports:
+              - 6379:6379
 
         steps:
 
@@ -51,7 +57,24 @@ jobs:
               run: |
                pip install python-dotenv
                python -m tests.unit.config
+    
+            - name: sender email
+              run: |
                pip install yagmail
                python -m tests.unit.sender
+
+            - name: tasks
+              run: |
+               pip install celery redis
+               python -m celery -A src.tests.unit.tasks:app_task worker --loglevel=INFO --detach
+               python -m tests.unit.tasks
+               python -m celery -A tests.unit.tasks:app_task inspect ping
+
+              
+
+
+
+
+          
 
           
