@@ -22,6 +22,19 @@ jobs:
 
         runs-on: ubuntu-latest
         environment: develop
+
+        env:
+
+                redis_port: ${{ secrets.REDIS_PORT }}
+                redis_host: ${{ secrets.REDIS_HOST }}
+                url: ${{ secrets.URL }}
+                sing: ${{ secrets.SING }}
+                origin: ${{ secrets.ORIGIN }}
+                rate_limit: ${{ secrets.RATE_LIMIT }}
+                global_rate_limit: ${{ secrets.GLOBAL_RATE_LIMIT }}
+                email_user: ${{ secrets.EMAIL_USER }}
+                password_user: ${{ secrets.PASSWORD_USER }}
+                open_ai_key: ${{ secrets.OPEN_AI_KEY}}
         services:
           redis:
             image: redis:alpine
@@ -41,18 +54,7 @@ jobs:
         
             
             - name: config test
-              env:
 
-                redis_port: ${{ secrets.REDIS_PORT }}
-                redis_host: ${{ secrets.REDIS_HOST }}
-                url: ${{ secrets.URL }}
-                sing: ${{ secrets.SING }}
-                origin: ${{ secrets.ORIGIN }}
-                rate_limit: ${{ secrets.RATE_LIMIT }}
-                global_rate_limit: ${{ secrets.GLOBAL_RATE_LIMIT }}
-                email_user: ${{ secrets.EMAIL_USER }}
-                password_user: ${{ secrets.PASSWORD_USER }}
-                open_ai_key: ${{ secrets.OPEN_AI_KEY}}
               
               run: |
                pip install python-dotenv
