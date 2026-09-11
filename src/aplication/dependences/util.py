@@ -10,13 +10,13 @@ class UtilsDepends:
 
     def __init__(self, request:Request)-> None:
 
-        self.requst = request
+        self.request = request
 
 
     #Pega o token e decodifica
     async def _token(self)-> None:
 
-        cookie = self.requst.cookies.get("X-instance_user")
+        cookie = self.request.cookies.get("X-instance_user")
 
         self.payload = await auth_jwt.decode(token=cookie)
 
@@ -35,6 +35,8 @@ class UtilsDepends:
 
     #Busca o usuario e levanta erro se não existir
     async def _user(self) -> None:
+
+        
 
         self.user = await  control_db.users.select(search="public_id", value=self.payload["public_id"])
 

@@ -2,7 +2,7 @@
 junta client com task
 """
 
-from src.service.cache.task import increment,hset, delete, client
+from src.service.cache.task import increment,hset, delete, client, set
 class  ControlCacheBackground:
 
     async def increment(self, name:str) -> None:
@@ -21,6 +21,12 @@ class  ControlCacheBackground:
     async def delete(self, name:str) -> None:
 
         delete.delay(name=name)
+
+    async def set(self, name:str, data:str, ttl:int=None) -> None:
+
+        set.delay(name=name, data=data, ttl=ttl)
+
+
 
 
 

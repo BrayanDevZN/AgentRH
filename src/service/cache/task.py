@@ -24,3 +24,9 @@ def hset(name:str, data:dict) -> None:
 def delete(name:str) -> None:
 
     asyncio.run(client.delete(name=name))
+
+
+@task_app.task()
+def set(name:str, data:str, ttl:int=None):
+
+    asyncio.run(client.set(name=name, data=data, ttl=ttl))

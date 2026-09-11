@@ -42,10 +42,10 @@ class Midlleware(BaseHTTPMiddleware):
 
         #Rotas publicas
         PUBLIC_ROUTES = {
-            "method": ["POST", "GET"], "path": ["/users/"]
+            "/users/": ["POST"], "/senders/": ["PATCH", "POST"]
         }
 
-        if requests.method in PUBLIC_ROUTES["method"] and requests.url.path in PUBLIC_ROUTES["path"]:
+        if requests.url.path in PUBLIC_ROUTES.keys() and requests.method in PUBLIC_ROUTES[requests.url.path]:
 
             name = f"rate_limit:{requests.client.host}"
 

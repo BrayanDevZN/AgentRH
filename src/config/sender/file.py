@@ -15,7 +15,7 @@ class FileSender:
     def __init__(self)-> None:
 
         self.BASE_DIR = Path(__file__).resolve().parent
-        self.files = ["create_account.html", "update_password.html"]
+        self.files = [file for file in os.listdir(self.BASE_DIR) if file.endswith(".html")]
 
 
     #Confere se os arquivos existem
@@ -63,6 +63,3 @@ instancia a classe
 
 instance = FileSender()
 senders = instance.get()
-
-    
-        

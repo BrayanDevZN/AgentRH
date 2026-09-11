@@ -86,7 +86,7 @@ class RedisCache:
 
 
     #Cria uma operação atomica
-    async def increment(self, name:str) -> None:
+    async def increment(self, name:str, time:int=None) -> None:
 
         
 
@@ -98,7 +98,7 @@ class RedisCache:
                     session.multi()
 
                     session.incr(name=name)
-                    session.expire(name=name, time=70)
+                    session.expire(name=name, time=60 if time is  None else time)
 
                     session.execute()
 
@@ -108,6 +108,31 @@ class RedisCache:
 
                 logger.error(e)
                 raise Exception(e)
+
+
+    #Insere um set normal
+    async def set(self, name:str, data:str, ttl:int=None) -> None:
+
+        while True:
+
+            logger.info(f"Tentando inserir em {name}...")
+
+            try:
+
+                with self.client.pipeline(transaction=True) as session:
+
+                    session.watch(name)
+                    session.multi()
+                    session.set(name=name, value=data)
+                    session.expire(name=name, time=60 if ttl is None else ttl)
+                    session.execute()
+                    logger.info("Inserido com sucesso!!!")
+                    break
+            except WatchError:
+
+                logger.warning(f"Alguem ja estava tentando inserir em {name}!!!")
+                continue
+
 
    
 
