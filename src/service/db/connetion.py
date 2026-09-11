@@ -2,7 +2,7 @@
 Cria a conexão do banco de dados juntando a variavel de ambiente url com o modulo de conexão
 """
 
-from src.config.settings import enviroiments
+from src.config.module import enviroiments
 from src.database.manage import ConenctionDb
 import asyncio
 instance = ConenctionDb(url=enviroiments["url"])

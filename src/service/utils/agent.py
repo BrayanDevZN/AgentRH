@@ -2,9 +2,9 @@
 Cria o agente, juntando ele com a sua key, prompt e enviando o email e transforma tudo em task
 """
 
-from src.service.utils.sender import sender, enviroiments
+from src.service.utils.sender import sender
 from src.utils.agent import analyze_agent
-from src.config.file import prompt
+from src.config.module import enviroiments, prompt
 from src.service.db.module import control_db
 from src.service.task import task_app
 import asyncio

@@ -6,7 +6,7 @@ def test_connection_db() -> None:
 
 
     from src.database.manage import ConenctionDb
-    from src.config.settings import enviroiments
+    from src.config.module import enviroiments
     from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncEngine
     import asyncio
 
@@ -29,6 +29,5 @@ def test_connection_db() -> None:
 
 if __name__ == "__main__":
     test_connection_db()
-
 
 

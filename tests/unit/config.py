@@ -5,8 +5,7 @@ testes de config
 
 def test_config() -> None:
 
-    from src.config.settings import enviroiments
-    from src.config.file import prompt
+    from src.config.module import enviroiments, prompt
 
     for name in enviroiments:
 

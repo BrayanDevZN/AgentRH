@@ -4,8 +4,7 @@ teste da open ai
 
 async def test_agent() -> None:
 
-    from src.config.file import prompt
-    from src.config.settings import enviroiments
+    from src.config.module import enviroiments, prompt
     from src.utils.agent import analyze_agent
 
     resume  = """

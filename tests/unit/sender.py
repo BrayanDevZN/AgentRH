@@ -6,7 +6,7 @@ Teste de sender
 async def test_sender() -> None:
 
     from src.utils.sender import SenderEmail
-    from src.config.settings import enviroiments
+    from src.config.module import enviroiments
 
     instance = SenderEmail(user=enviroiments["email_user"], password=enviroiments["password_user"])
 

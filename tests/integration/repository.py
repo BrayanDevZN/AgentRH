@@ -6,7 +6,7 @@ Executa os testes de repository
 async def test_repository() -> None:
 
     from src.database.manage import ControlDb, migration_db, Users, Vancancies, Resumes, ConenctionDb
-    from src.config.settings import enviroiments
+    from src.config.module import enviroiments
     import uuid
     
 

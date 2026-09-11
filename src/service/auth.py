@@ -2,7 +2,7 @@
 junta os modulos de auth e instancia eles
 """
 
-from src.config.settings import enviroiments
+from src.config.module import enviroiments
 from src.auth.module import AuthJwt, AuthHash
 
 
