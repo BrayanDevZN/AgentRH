@@ -57,7 +57,7 @@ class UtilsDepends:
     async def _permission(self) -> None:
 
         ADMIN_REQUIRED = {
-            "/admin/": ["*"]
+            "/admin/": ["*"], "/vancancies/": ["POST", "PATCH", "DELETE"]
         }
 
         if self.request.url.path in ADMIN_REQUIRED.keys():

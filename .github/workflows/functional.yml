@@ -50,4 +50,5 @@ jobs:
                python -m tests.functional.users
                python -m tests.functional.auth
                python -m tests.functional.admin
+               python -m tests.functional.vancancies
               

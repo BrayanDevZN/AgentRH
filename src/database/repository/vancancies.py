@@ -46,7 +46,7 @@ class VancanciesDb:
             logger.error(e)
             raise VancanciesDbError(e)
 
-    async def select(self, search:Literal["name", "id", "created_by"], value:str|int) -> dict|None:
+    async def select(self, search:Literal["name", "id", "created_by", "all"], value:str|int|None=None) -> dict|None:
 
 
         try:
@@ -61,8 +61,13 @@ class VancanciesDb:
             }
 
             async with self.eng.begin() as session:
+                if search !="all":
 
-                query = select(Vancancies).options(selectinload(Vancancies.resumes)).where(items[search] == value)
+                    query = select(Vancancies).options(selectinload(Vancancies.resumes)).where(items[search] == value)
+
+                else:
+
+                    query = select(Vancancies).options(selectinload(Vancancies.resumes))
 
                 result = await session.execute(query)
 

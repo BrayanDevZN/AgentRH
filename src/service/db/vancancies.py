@@ -29,7 +29,9 @@ class ControlVancancies:
         return vancancie
 
     #Busca cache, se for nulo, pega do banco
-    async def select(self, search:Literal["name", "id", "created_by"], value:str|int) -> None|dict:
+    async def select(self, search:Literal["name", "id", "created_by", "all"], value:str|int|None=None) -> None|dict:
+
+
 
         match search:
 
@@ -41,6 +43,8 @@ class ControlVancancies:
 
             case "created_by":
                 name = f"vancancie:created_by:{value}"
+            case "all":
+                name = "vancancies"
 
         cache = await client_background.get(name=name, hash=True)
 
