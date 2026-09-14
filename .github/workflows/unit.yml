@@ -35,6 +35,7 @@ jobs:
                 email_user: ${{ secrets.EMAIL_USER }}
                 password_user: ${{ secrets.PASSWORD_USER }}
                 open_ai_key: ${{ secrets.OPEN_AI_KEY}}
+                environment: ${{ secrets.ENVIRONMENT }}
         services:
           redis:
             image: redis:alpine
