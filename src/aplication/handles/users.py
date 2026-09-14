@@ -77,8 +77,8 @@ async def create_user(user:CreateUser) -> JSONResponse:
         )
 
         payload = {
-            "created_at": now,
-            "public_id": instance_user["public_id"]
+            "created_at": str(now),
+            "public_id": str(instance_user["public_id"])
         }
 
         token = await auth_jwt.encode(payload=payload)
@@ -96,7 +96,7 @@ async def create_user(user:CreateUser) -> JSONResponse:
         logger.exception(f"Erro ao criar usuário: {e}")
         raise HTTPException(
             status_code=500,
-            detail=e
+            detail=str(e)
         )
 
 
@@ -121,7 +121,7 @@ async def get_user(user:dict=Depends(depends_user)) -> JSONResponse:
 
         raise HTTPException(
             status_code=500,
-            detail=e
+            detail=str(e)
         )
 
 
@@ -166,7 +166,7 @@ async def update_user(update:UpdateUser,cookie:str|None = Cookie(default=None, a
 
         raise HTTPException(
             status_code=500,
-            detail=e
+            detail=str(e)
         )
 
 #Deleta o usuario

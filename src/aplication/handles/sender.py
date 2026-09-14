@@ -45,7 +45,7 @@ async def sender_create(user: SenderCreate) -> JSONResponse:
 
         raise HTTPException(
             status_code=501, 
-            detail=e
+            detail=str(e)
         )
 
 
@@ -78,37 +78,31 @@ async def sender_update(email:SenderCreate) -> JSONResponse:
 
         return JSONResponse(
             status_code=201,
-            content={"status": True}
+            content={"status": True, "code": secret if enviroiments["environment"] == "test" else None}
         )
 
     except Exception as e:
 
         raise HTTPException(
             status_code=501, 
-            detail=e
+            detail=str(e)
         )
 
 
 @router_sender.post("/2fa")
-async def sender_auth(cookie:str|None = Cookie(default=None)) -> JSONResponse:
+async def sender_auth(cookie:str|None = Cookie(default=None, alias="X-auth2_token")) -> JSONResponse:
 
     try:
 
+       
         if cookie is None:
-
-            raise HTTPException(
-                status_code=401,
-                detail="expeted cookie"
-            )
-
-        if not "X-auth2_token" in cookie:
 
             raise HTTPException(
                 status_code=401,
                 detail="expeted token X-auth2_token"
             )
 
-        payload = await auth_jwt.decode(token=cookie["X-auth2_token"])
+        payload = await auth_jwt.decode(token=cookie)
         now = datetime.now(timezone.utc)
         expire = datetime.strptime(payload["expire"], "%Y-%m-%d %H:%M:%S.%f%z")
         if now > expire:
@@ -133,14 +127,14 @@ async def sender_auth(cookie:str|None = Cookie(default=None)) -> JSONResponse:
 
         return JSONResponse(
             status_code=201,
-            content={"status": True}
+            content={"status": True, "code": secret if enviroiments["environment"] == "test" else None}
         )
 
     except Exception as e:
 
         raise HTTPException(
             status_code=501, 
-            detail=e
+            detail=str(e)
         )
 
 
@@ -148,7 +142,6 @@ async def sender_auth(cookie:str|None = Cookie(default=None)) -> JSONResponse:
 
 
         
-
 
 
 

@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.aplication.handles.users import router_users
 from src.aplication.handles.sender import router_sender
+from src.aplication.handles.auth import router_auth
 from src.aplication.midlleware import Midlleware
 from src.service.module import enviroiments
 
@@ -14,7 +15,7 @@ class Aplication:
 
     def __init__(self)-> None:
 
-        self.routes = [router_sender, router_users]
+        self.routes = [router_sender, router_users, router_auth]
         self.origin = enviroiments["origin"]
         self.app = FastAPI()
 

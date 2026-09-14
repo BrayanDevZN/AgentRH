@@ -42,8 +42,10 @@ class Midlleware(BaseHTTPMiddleware):
 
         #Rotas publicas
         PUBLIC_ROUTES = {
-            "/users/": ["POST"], "/sender/": ["PATCH", "POST"]
+            "/users/": ["POST"], "/sender/": ["PATCH", "POST"], "/auth/": ["GET"], "/sender/2fa": ["POST"]
         }
+
+        
     
 
         if requests.url.path in PUBLIC_ROUTES.keys() and requests.method in PUBLIC_ROUTES[requests.url.path]:
@@ -59,7 +61,7 @@ class Midlleware(BaseHTTPMiddleware):
 
                 raise HTTPException(
                     status_code=404,
-                    detail="exepeted X-user_token in headers"
+                    detail="expeted X-user_token in headers"
                 )
 
             name = f"rate_limit:{token}"

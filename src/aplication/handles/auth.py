@@ -12,7 +12,7 @@ from src.aplication.schema.users import ValidPassword
 from src.aplication.schema.sender import ValidEmail
 from src.aplication.schema.auth import ValidLogin, ValidUpdatePass
 from src.aplication.dependences.depends import depends_user
-router_auth = APIRouter(prefix="auth/", tags=["auth"])
+router_auth = APIRouter(prefix="/auth", tags=["auth"])
 
 
 #Rota para fazer login
@@ -28,7 +28,7 @@ async def user_login(user:ValidLogin, request:Request, response:Response) -> JSO
         
         if cookie is not None:
             token_auth = await auth_jwt.decode(token=cookie)
-            response.delete_cookie("X-auth2_token")
+            
             now = datetime.now(timezone.utc)
             expire = datetime.strptime(token_auth["expire"], "%Y-%m-%d %H:%M:%S.%f%z")
             if now>expire:
@@ -56,12 +56,13 @@ async def user_login(user:ValidLogin, request:Request, response:Response) -> JSO
                 status_code=201,
                 content={"status":True, "auth": True}
             )
+            response.delete_cookie("X-auth2_token")
 
             expire = datetime.now(timezone.utc) + timedelta(days=7)
 
             token = {
-                "public_id": token_auth["public_id"],
-                "expire": expire
+                "public_id": str(token_auth["public_id"]),
+                "expire": str(expire)
             }
 
             token = await auth_jwt.encode(payload=token)
@@ -74,8 +75,8 @@ async def user_login(user:ValidLogin, request:Request, response:Response) -> JSO
             )
 
             payload = {
-                    "created_at": now,
-                    "public_id": token_auth["public_id"]
+                    "created_at": str(now),
+                    "public_id": str(token_auth["public_id"])
                 }
             token = await auth_jwt.encode(payload=payload)
             response.set_cookie(
@@ -118,8 +119,9 @@ async def user_login(user:ValidLogin, request:Request, response:Response) -> JSO
 
                 payload = {
                     "email": email,
-                    "public_id": instance_user["public_id"],
-                    "expire": str(expire)
+                    "public_id": str(instance_user["public_id"]),
+                    "expire": str(expire),
+                    "name": instance_user["name"]
                 }
 
                 token = await auth_jwt.encode(payload=payload)
@@ -153,8 +155,8 @@ async def user_login(user:ValidLogin, request:Request, response:Response) -> JSO
                 expire = datetime.now(timezone.utc) + timedelta(days=7)
 
                 token = {
-                    "public_id": token_auth["public_id"],
-                    "expire": expire
+                    "public_id": str(token_auth["public_id"]),
+                    "expire": str(expire)
                 }
 
                 token = await auth_jwt.encode(payload=token)
@@ -167,8 +169,8 @@ async def user_login(user:ValidLogin, request:Request, response:Response) -> JSO
                 )
 
                 payload = {
-                    "created_at": now,
-                    "public_id": token_auth["public_id"]
+                    "created_at": str(now),
+                    "public_id": str(token_auth["public_id"])
                 }
                 token = await auth_jwt.encode(payload=payload)
                 response.set_cookie(
@@ -183,20 +185,20 @@ async def user_login(user:ValidLogin, request:Request, response:Response) -> JSO
     except Exception as e:
         logger.error(e)
         raise HTTPException(
-            detail=e,
+            detail=str(e),
             status_code=501
         )
 
 
 #Rota pra atualizar senha do usuario
-@router_auth.path("/")
-async def user_update_pass(user:ValidUpdatePass, cookie = Cookie(default=None, alias="X-user_token")) -> JSONResponse:
+@router_auth.patch("/")
+async def user_update_pass(request:Request,user:ValidUpdatePass, cookie = Cookie(default=None, alias="X-user_token")) -> JSONResponse:
 
     try:
 
-        instance_user = Depends(depends_user) if not user.sender else await control_db.users.select(search="email", value=user.email)
+        instance_user = await depends_user(request=request) if not user.sender else await control_db.users.select(search="email", value=user.email)
 
-        new_pass = ValidPassword(password=user.password).password
+        new_pass = ValidPassword(password=user.new_password).password
 
         if user.sender:
 
@@ -257,7 +259,14 @@ async def user_update_pass(user:ValidUpdatePass, cookie = Cookie(default=None, a
                 detail="equal password"
             )
 
-        await control_db.users.update(search="id", field=instance_user["id"], set="password", value=new_pass)
+        hashed_new_pass = await auth_hash.encode(password=new_pass)
+
+        await control_db.users.update(
+            search="id",
+            field=instance_user["id"],
+            set="password",
+            value=hashed_new_pass
+        )
 
         response = JSONResponse(
             status_code=201,
@@ -275,7 +284,7 @@ async def user_update_pass(user:ValidUpdatePass, cookie = Cookie(default=None, a
         logger.error(e)
         raise HTTPException(
             status_code=501,
-            detail=e
+            detail=str(e)
         )
 
 
@@ -291,6 +300,7 @@ async def logout(user:dict|None = Depends(depends_user)) -> JSONResponse:
             content={"status": True}
         )
         response.delete_cookie(key="X-user_token")
+        response.delete_cookie(key="X-user_refresh_token")
 
         return response
 
@@ -298,7 +308,7 @@ async def logout(user:dict|None = Depends(depends_user)) -> JSONResponse:
         logger.error(e)
         raise HTTPException(
             status_code=501,
-            detail=e
+            detail=str(e)
         )
 
 
@@ -317,11 +327,13 @@ async def refresh(user:dict|None = Depends(depends_user),
 
         refresh = await auth_jwt.decode(token=cookie)
 
-        if refresh["public_id"] != user["public_id"]:
+        if str(refresh["public_id"]) != str(user["public_id"]):
             raise HTTPException(
                 status_code=409,
                 detail="Invalid refresh token"
             )
+
+        payload = await auth_jwt.decode(token=cookie)
 
         now = datetime.now(timezone.utc)
         expire = datetime.strptime(payload["expire"], "%Y-%m-%d %H:%M:%S.%f%z")
@@ -375,7 +387,7 @@ async def refresh(user:dict|None = Depends(depends_user),
         logger.error(e)
         raise HTTPException(
             status_code=501,
-            detail=e
+            detail=str(e)
         )
 
 
@@ -396,7 +408,4 @@ async def refresh(user:dict|None = Depends(depends_user),
 
 
         
-
-
-
 
