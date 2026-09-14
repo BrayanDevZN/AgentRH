@@ -20,7 +20,7 @@ class UsersDb:
 
 
     #Insere na tabela
-    async def insert(self, name:str,age:int, email:str, password:str, cpf:str, gender:Literal["male", "female", "other"],
+    async def insert(self,email:str,password:str, name:str=None,age:int=None, cpf:str=None, gender:Literal["male", "female", "other"]=None,
                      permission:bool = False, role:Literal["user", "admin"] = "user"
                      )-> dict:
 

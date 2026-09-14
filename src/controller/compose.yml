@@ -22,7 +22,10 @@ services:
     build:
       context: ../..
       dockerfile: src/controller/images/Dockerfile.migration
-    command: ["python", "-m", "src.service.db.migration", "make_migration_tables"]
+    command: |
+      - python -m src.service.db.migration make_migration_tables
+      - python -m src.service.admin create_admin
+  
 
     
 
