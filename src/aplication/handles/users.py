@@ -53,8 +53,10 @@ async def create_user(user:CreateUser) -> JSONResponse:
                                                     password=password, permission=user.permission, gender=user.gender
                                                     )
 
+        now = datetime.now(timezone.utc)
 
-        expire = datetime.now(timezone.utc) + timedelta(days=7)
+
+        expire = now + timedelta(days=7)
 
         payload = {
             "public_id":str(instance_user["public_id"]),
@@ -69,6 +71,19 @@ async def create_user(user:CreateUser) -> JSONResponse:
         )
         response.set_cookie(
             key="X-user_token",
+            value=token,
+            httponly=True,
+            samesite="strict"
+        )
+
+        payload = {
+            "created_at": now,
+            "public_id": instance_user["public_id"]
+        }
+
+        token = await auth_jwt.encode(payload=payload)
+        response.set_cookie(
+            key="X-user_refresh-token",
             value=token,
             httponly=True,
             samesite="strict"

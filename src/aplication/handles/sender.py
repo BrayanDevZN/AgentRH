@@ -69,7 +69,7 @@ async def sender_update(email:SenderCreate) -> JSONResponse:
         name = user["name"]
 
         secret = str(secrets.randbelow(90000) + 10000)
-        await client_background.set(name=f"email_sender:update:{email}", data=secret, ttl=60 * 8)
+        await client_background.set(name=f"user_sender:update:{email}", data=secret, ttl=60 * 8)
 
         html = str(senders["update_password"])
         body = html.replace(name, secret)
@@ -110,7 +110,7 @@ async def sender_auth(cookie:str|None = Cookie(default=None)) -> JSONResponse:
 
         payload = await auth_jwt.decode(token=cookie["X-auth2_token"])
         now = datetime.now(timezone.utc)
-        expire = datetime.strptime(payload["expire"], timezone.utc)
+        expire = datetime.strptime(payload["expire"], "%Y-%m-%d %H:%M:%S.%f%z")
         if now > expire:
 
             raise HTTPException(
@@ -120,10 +120,6 @@ async def sender_auth(cookie:str|None = Cookie(default=None)) -> JSONResponse:
 
         name = payload["name"]
         email = payload["email"]
-
-
-
-        
 
         secret = str(secrets.randbelow(90000) + 10000)
 
