@@ -4,7 +4,7 @@ Handles de sender
 
 from fastapi import HTTPException, APIRouter, Depends, Cookie, status
 from src.aplication.dependences.depends import depends_user
-from src.service.module import senders, sender, client_background, control_db, auth_jwt
+from src.service.module import senders, sender, client_background, control_db, auth_jwt, enviroiments
 from src.aplication.schema.sender import ValidEmail, SenderCreate
 from fastapi.responses import JSONResponse
 from datetime import timezone, datetime
@@ -19,25 +19,33 @@ async def sender_create(user: SenderCreate) -> JSONResponse:
         email = ValidEmail(email=user.email).email
         name = user.name
         secret = str(secrets.randbelow(90000) + 10000)
-       
-        
-        secret = str(secrets.randbelow(90000) + 10000)
         name_set = f"email_sender:create:{email}"
-        await client_background.set(name=name_set, data=secret, ttl=60 * 15)
-        html = str(senders["create_account"])
-        body = html.format(name, secret)
-        sender.delay(email=email, subject="Codigo para criação de conta!!", body=body)
+        await client_background.set_immediate(name=name_set, data=secret, ttl=60 * 15)
+
+        is_test_email = (
+            enviroiments["environment"].lower() == "test"
+            
+        )
+
+        content = {"status": True}
+
+        if is_test_email:
+            content["code"] = secret
+        else:
+            html = str(senders["create_account"])
+            body = html.format(name, secret)
+            sender.delay(email=email, subject="Codigo para criação de conta!!", body=body)
 
         return JSONResponse(
             status_code=201,
-            content={"status": True}
+            content=content
         )
 
-    except Exception:
+    except Exception as e:
 
         raise HTTPException(
             status_code=501, 
-            detail="internal server error"
+            detail=e
         )
 
 
@@ -73,11 +81,11 @@ async def sender_update(email:SenderCreate) -> JSONResponse:
             content={"status": True}
         )
 
-    except Exception:
+    except Exception as e:
 
         raise HTTPException(
             status_code=501, 
-            detail="internal server error"
+            detail=e
         )
 
 
@@ -132,11 +140,11 @@ async def sender_auth(cookie:str|None = Cookie(default=None)) -> JSONResponse:
             content={"status": True}
         )
 
-    except Exception:
+    except Exception as e:
 
         raise HTTPException(
             status_code=501, 
-            detail="internal server error"
+            detail=e
         )
 
 
@@ -144,7 +152,6 @@ async def sender_auth(cookie:str|None = Cookie(default=None)) -> JSONResponse:
 
 
         
-
 
 
 

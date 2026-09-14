@@ -8,9 +8,10 @@ if __name__ == "__main__":
 
         from src.database.migration.tables import migration_db
         from src.service.db.connetion import engine
+        import asyncio
 
 
-        migration_db(engine=engine)
+        asyncio.run(migration_db(engine=engine))
 
     else:
 

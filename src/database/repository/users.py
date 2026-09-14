@@ -78,7 +78,7 @@ class UsersDb:
             raise UsersDbError(e)
 
     async def update(self,search:Literal["public_id", "email", "cpf", "id"] , field:str|int,
-                     set:Literal["password", "permission", "role"], value:str|bool) -> dict:
+                     set:Literal["password", "permission", "role", "age", "gender"], value:str|bool|int) -> dict:
 
 
         try:
@@ -110,6 +110,10 @@ class UsersDb:
                         user.permission = value
                     case "role":
                         user.role = value
+                    case "age":
+                        user.age = value
+                    case "gender":
+                        user.gender = value
 
                 await session.flush()
                 await session.refresh(user)
@@ -139,5 +143,4 @@ class UsersDb:
 
             logger.error(e)
             raise UsersDbError(e)
-
 

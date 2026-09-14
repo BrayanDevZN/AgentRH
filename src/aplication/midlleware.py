@@ -23,9 +23,9 @@ class Midlleware(BaseHTTPMiddleware):
             return None
         
 
-        limit = enviroiments["global_rate_limit"]
+        limit = int(enviroiments["global_rate_limit"])
 
-        if instance > limit:
+        if int(instance) > limit:
 
             return JSONResponse(
                 status_code=429,
@@ -42,8 +42,9 @@ class Midlleware(BaseHTTPMiddleware):
 
         #Rotas publicas
         PUBLIC_ROUTES = {
-            "/users/": ["POST"], "/senders/": ["PATCH", "POST"]
+            "/users/": ["POST"], "/sender/": ["PATCH", "POST"]
         }
+    
 
         if requests.url.path in PUBLIC_ROUTES.keys() and requests.method in PUBLIC_ROUTES[requests.url.path]:
 
@@ -52,10 +53,11 @@ class Midlleware(BaseHTTPMiddleware):
         else:
 
             token = requests.cookies.get("X-user_token")
+            
 
             if token is None:
 
-                return HTTPException(
+                raise HTTPException(
                     status_code=404,
                     detail="exepeted X-user_token in headers"
                 )
@@ -64,11 +66,11 @@ class Midlleware(BaseHTTPMiddleware):
 
         instance = await client_background.get(name)
 
-        if instance is None or enviroiments["rate_limit"] > instance:
+        if instance is None or int(enviroiments["rate_limit"]) > int(instance):
             await client_background.increment(name)
             return None
 
-        elif instance is not None and enviroiments["rate_limit"]<instance:
+        elif instance is not None and int(enviroiments["rate_limit"])<int(instance):
 
             return JSONResponse(
                 content={"error": "execeded rate limit"}, status_code=422
@@ -96,5 +98,3 @@ class Midlleware(BaseHTTPMiddleware):
 
 
         
-
-

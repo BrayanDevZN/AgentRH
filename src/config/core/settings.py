@@ -18,7 +18,8 @@ class Environment:
 
         self.envs = ["redis_port", "redis_host", "url", "sing", 
                      "origin", "rate_limit", "global_rate_limit", 
-                     "redis_password", "email_user", "password_user", "open_ai_key"]
+                     "redis_password", "email_user", "password_user", "open_ai_key",
+                     "environment", "test_email"]
 
 
 
@@ -48,7 +49,7 @@ class Environment:
 
             env = os.getenv(name)
 
-            if env is None and name != "redis_password":
+            if env is None and name not in {"redis_password", "test_email"}:
                 msg = f"Expeted enviroin {name}"
                 logger.error(msg)
 

@@ -16,7 +16,13 @@ class UtilsDepends:
     #Pega o token e decodifica
     async def _token(self)-> None:
 
-        cookie = self.request.cookies.get("X-instance_user")
+        cookie = self.request.cookies.get("X-user_token")
+
+        if cookie is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="expected X-user_token cookie"
+            )
 
         self.payload = await auth_jwt.decode(token=cookie)
 
@@ -24,7 +30,7 @@ class UtilsDepends:
     async def _valid(self) -> None:
 
         now = datetime.now(timezone.utc)
-        expire = datetime.strptime(self.payload["expire"], timezone.utc)
+        expire = datetime.fromisoformat(self.payload["expire"])
         if now > expire:
 
             raise HTTPException(

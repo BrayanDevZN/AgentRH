@@ -26,6 +26,10 @@ class  ControlCacheBackground:
 
         set.delay(name=name, data=data, ttl=ttl)
 
+    async def set_immediate(self, name:str, data:str, ttl:int=None) -> None:
+
+        await client.set(name=name, data=data, ttl=ttl)
+
 
 
 
@@ -33,7 +37,6 @@ class  ControlCacheBackground:
 client_background = ControlCacheBackground()
 
     
-
 
 
 

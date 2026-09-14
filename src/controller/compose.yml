@@ -1,0 +1,45 @@
+services:
+  redis:
+    image: redis:alpine
+    ports:
+      - "6350:6379"
+
+  migration:
+    build:
+      context: ../..
+      dockerfile: src/controller/images/Dockerfile.migration
+
+    
+
+
+  api-agent:
+    ports:
+      - "650:8000"
+    build:
+      context: ../..
+      dockerfile: src/controller/images/Dockerfile.api
+    depends_on:
+      - redis
+      - migration
+
+  agent:
+    build:
+      context: ../..
+      dockerfile: src/controller/images/Dockerfile.worker
+
+
+    depends_on:
+      - redis
+      - api-agent
+      - migration
+
+    
+    
+
+    
+
+  
+     
+
+
+  

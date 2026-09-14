@@ -20,7 +20,7 @@ class Users(Base):
     cpf: Mapped[str] = mapped_column(String(12), unique=True, nullable=False, index=True)
     age: Mapped[int] = mapped_column(Integer, nullable=False)
     gender: Mapped[Literal["male", "female", "other"]] = mapped_column(String(15), nullable=False)
-    password: Mapped[str] = mapped_column(String(50), nullable=False)
+    password: Mapped[str] = mapped_column(String(100), nullable=False)
     permission: Mapped[bool] = mapped_column(BOOLEAN, default=False)
     role: Mapped[Literal["admin", "user"]] = mapped_column(String(20), default="user")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)

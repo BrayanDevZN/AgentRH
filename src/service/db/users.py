@@ -70,7 +70,7 @@ class ControlUsers:
 
     #Atualiza o usuario e deleta cache
     async def update(self, search:Literal["public_id", "email", "cpf", "id"], field:str|int,
-                     set:Literal["password", "permission", "role"], value:str|bool) -> dict|None:
+                     set:Literal["password", "permission", "role", "age", "gender"], value:str|bool|int) -> dict|None:
 
         data = locals().copy()
         data.pop("self")
