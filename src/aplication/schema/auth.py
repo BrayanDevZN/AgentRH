@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 class ValidLogin(BaseModel):
 
     email: str
-    password: str
+    password: str|None = Field(default=None)
     code:str|None = Field(default=None)
 
 class ValidUpdatePass(BaseModel):

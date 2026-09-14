@@ -22,7 +22,8 @@ async def user_login(user:ValidLogin, request:Request, response:Response) -> JSO
     try:
 
         email = ValidEmail(email=user.email).email
-        password = ValidPassword(password=user.password).password
+    
+        
 
         cookie = request.cookies.get("X-auth2_token")
         
@@ -92,7 +93,8 @@ async def user_login(user:ValidLogin, request:Request, response:Response) -> JSO
 
         else:
 
-            
+        
+
 
             instance_user = await control_db.users.select(search="email", value=email)
 
@@ -104,12 +106,27 @@ async def user_login(user:ValidLogin, request:Request, response:Response) -> JSO
                     detail="User not Found"
                 )
 
-            check = await auth_hash.check(password=password, hashed_passowrd=instance_user["password"])
-            if not check:
+            if instance_user["role"] == "user" and user.password is None:
                 raise HTTPException(
-                    status_code=404,
-                    detail="Invalid password"
+                    status_code=401,
+                    detail="if user role is user, expeted password"
                 )
+
+        
+
+            if instance_user["password"] is not None:
+                password = ValidPassword(password=user.password).password
+
+                check = await auth_hash.check(password=password, hashed_passowrd=instance_user["password"])
+                if not check:
+                    raise HTTPException(
+                        status_code=404,
+                        detail="Invalid password"
+                    )
+                
+            
+
+            
 
 
             if instance_user["permission"]:

@@ -49,5 +49,5 @@ jobs:
                pip install python-dotenv
                python -m tests.functional.users
                python -m tests.functional.auth
+               python -m tests.functional.admin
               
-

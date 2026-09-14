@@ -17,7 +17,7 @@ class ControlUsers:
         self.users = ControlDb(engine=engine_session).users
 
     #Cria o usuario e salva o cache
-    async def insert(self, email:str,password:str, name:str=None,age:int=None, cpf:str=None, gender:Literal["male", "female", "other"]=None,
+    async def insert(self, email:str,password:str=None, name:str=None,age:int=None, cpf:str=None, gender:Literal["male", "female", "other"]=None,
                      permission:bool = False, role:Literal["user", "admin"] = "user") -> dict:
 
         data = locals().copy()
@@ -36,6 +36,8 @@ class ControlUsers:
     #Le no cache, se existir, retorna, se nao, busca no banco, e depois salva cache
     async def select(self, search:Literal["public_id", "email", "id", "cpf"], value:str|int, is_admin:bool=False,
                      is_all:bool=False) -> None|dict:
+
+        name = "users"
 
         match search:
 

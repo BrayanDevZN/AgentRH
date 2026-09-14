@@ -35,7 +35,7 @@ async def alter_permission(set_user:ValidAddPermission,user: dict|None = Depends
                     detail=f"Not permission for {user["name"]}"
                 )
 
-        if role == set_user["role"]:
+        if role == required_user["role"]:
              raise HTTPException(
                   status_code=401,
                   detail=f"{user["name"]} is already an {role}"
@@ -77,6 +77,10 @@ async def get_users(get_user:ValidGetUser, user:dict|None = Depends(depends_user
                                                         is_all=get_user.is_all, 
                                                         is_admin=user["email"] == enviroiments["email_user"])
 
+          if get_user is not None:
+               get_user["public_id"] = str(get_user["public_id"])
+               get_user["created_at"] = str(get_user["created_at"])
+
           return JSONResponse(
                status_code=201,
                content=get_user
@@ -96,7 +100,7 @@ async def delete_user(get_user:ValidDeleteUser, user:dict|None = Depends(depends
 
      try:
 
-          if user["email"] == enviroiments["email_user"]:
+          if user["email"] != enviroiments["email_user"]:
 
                raise HTTPException(
                     status_code=403,
@@ -128,4 +132,3 @@ async def delete_user(get_user:ValidDeleteUser, user:dict|None = Depends(depends
           )
 
         
-
