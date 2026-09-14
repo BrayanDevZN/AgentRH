@@ -34,7 +34,8 @@ class ControlUsers:
         return user
 
     #Le no cache, se existir, retorna, se nao, busca no banco, e depois salva cache
-    async def select(self, search:Literal["public_id", "email", "id", "cpf"], value:str|int) -> None|dict:
+    async def select(self, search:Literal["public_id", "email", "id", "cpf"], value:str|int, is_admin:bool=False,
+                     is_all:bool=False) -> None|dict:
 
         match search:
 
@@ -55,7 +56,7 @@ class ControlUsers:
         if cache:
             return ChangeTypes.from_cache(cache)
 
-        user = await self.users.select(search=search, value=value)
+        user = await self.users.select(search=search, value=value, is_all=is_all, is_admin=is_admin)
         if user is None:
             return None
 

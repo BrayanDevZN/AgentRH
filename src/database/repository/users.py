@@ -48,10 +48,12 @@ class UsersDb:
             logger.error(e)
             raise UsersDbError(e)
 
-    async def select(self, search:Literal["public_id", "email", "id", "cpf"], value:str|int) -> dict|None:
+    async def select(self, search:Literal["public_id", "email", "id", "cpf"]=None, value:str|int|None=None,
+                     is_all:bool=False, is_admin:bool=False) -> dict|None:
 
 
         try:
+            
 
             logger.info(f"Buscando usuario pelo {search}...")
 
@@ -64,7 +66,17 @@ class UsersDb:
 
             async with self.eng.begin() as session:
 
-                query = select(Users).where(items[search] == value)
+                if is_all and not is_admin:
+
+                    query = select(Users).where(Users.role == "user")
+
+                elif is_all and is_admin:
+                    query = select(Users)
+
+                else:
+                    query = select(Users).where(items[search] == value)
+
+                
 
                 result = await session.execute(query)
 
@@ -78,7 +90,8 @@ class UsersDb:
             raise UsersDbError(e)
 
     async def update(self,search:Literal["public_id", "email", "cpf", "id"] , field:str|int,
-                     set:Literal["password", "permission", "role", "age", "gender"], value:str|bool|int) -> dict:
+                     set:Literal["password", "permission", "role", "age", "gender"], 
+                     value:str|bool|int) -> dict:
 
 
         try:
@@ -94,7 +107,8 @@ class UsersDb:
                     "id": Users.id,
                     "cpf": Users.cpf
                 }
-                query = select(Users).where(items[search] == field).with_for_update()
+                query = select(Users).where(items[search] == field).with_for_update() 
+                         
                 user = await session.scalar(query)
 
                 if user is None:

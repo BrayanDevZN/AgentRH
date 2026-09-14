@@ -53,6 +53,35 @@ class UtilsDepends:
                 detail="not found user"
             )
 
+    #Confere permissão do usuario
+    async def _permission(self) -> None:
+
+        ADMIN_REQUIRED = {
+            "/admin/": ["*"]
+        }
+
+        if self.request.url.path in ADMIN_REQUIRED.keys():
+
+            required = ADMIN_REQUIRED[self.request.url.path]
+            if required == "*":
+                if self.user != "admin":
+                    raise HTTPException(
+                        status_code=403,
+                        detail=f"not permission for users {self.user["role"]}"
+                    )
+
+            else:
+
+                if self.request.method in required and self.user["role"] != "admin":
+
+                    raise HTTPException(
+                        status_code=403,
+                        detail=f"not permission for users {self.user["role"]}"
+                    )
+
+        
+
+
 
     #Executa os metodos e retorna os dados do usuario
     async def run(self) -> dict:
@@ -60,6 +89,7 @@ class UtilsDepends:
         await self._token()
         await self._valid()
         await self._user()
+        await self._permission()
 
         return self.user
     
