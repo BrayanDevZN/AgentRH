@@ -87,7 +87,11 @@ Docker e Pytest.
 
     await asyncio.sleep(60)
 
-    resume_select = await control_db.resumes.select(search="id", value=resume_insert["id"])
+    resume_select = await control_db.resumes.select(
+        id=resume_insert["id"],
+        user_id=user_insert["id"],
+        vancancie_id=vancancie_insert["id"]
+    )
     print(resume_select)
 
     resume_delete = await control_db.resumes.delete(id=resume_insert["id"])

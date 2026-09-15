@@ -67,7 +67,11 @@ async def test_repository() -> None:
     )
     print(resume_insert)
 
-    resume_select = await instance_db.resumes.select(search="id", value=resume_insert["id"])
+    resume_select = await instance_db.resumes.select(
+        id=resume_insert["id"],
+        user_id=user_insert["id"],
+        vancancie_id=vancancie_insert["id"]
+    )
     print(resume_select)
 
     resume_update = await instance_db.resumes.update(
