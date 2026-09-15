@@ -46,6 +46,10 @@ class ChangeTypes:
                 result[field] = base64.b64encode(value).decode("ascii")
                 types[field] = "bytes"
 
+            elif isinstance(value, (dict, list)):
+                result[field] = json.dumps(value)
+                types[field] = "json"
+
             else:
                 result[field] = value
 
@@ -84,5 +88,8 @@ class ChangeTypes:
 
                 case "bytes":
                     result[field] = base64.b64decode(value)
+
+                case "json":
+                    result[field] = json.loads(value)
 
         return result

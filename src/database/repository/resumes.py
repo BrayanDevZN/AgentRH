@@ -47,30 +47,40 @@ class ResumesDb:
             logger.error(e)
             raise ResumesDbError(e)
 
-    async def select(self, search:Literal["id", "user_id", "vancancie_id"],
-                     value:str|int) -> dict|None:
+    async def select(self, user_id:int|None=None, vancancie_id:int|None=None, id:int|None=None,
+                     get_all:bool=False) -> dict|list[dict]|None:
 
 
         try:
 
-            logger.info(f"Buscando curriculo pelo {search}...")
-
-            items = {
-                "id": Resumes.id,
-                "user_id": Resumes.user_id,
-                "vancancie_id": Resumes.vancancie_id,
-                
-            }
+            logger.info(f"Buscando curriculo...")
 
             async with self.eng.begin() as session:
 
-                query = select(Resumes).options(selectinload(Resumes.vancancie)).where(items[search] == value)
+                query = select(Resumes).options(selectinload(Resumes.vancancie))
+
+                if not get_all:
+                    filters = []
+
+                    if id is not None:
+                        filters.append(Resumes.id == id)
+
+                    if user_id is not None:
+                        filters.append(Resumes.user_id == user_id)
+
+                    if vancancie_id is not None:
+                        filters.append(Resumes.vancancie_id == vancancie_id)
+
+                    query = query.where(*filters)
 
                 result = await session.execute(query)
 
-                result = result.scalars().first()
+                if get_all:
+                    resumes = result.scalars().all()
+                    return [model_to_dict(resume) for resume in resumes]
 
-                return model_to_dict(result) if result is not None else None
+                resume = result.scalars().first()
+                return model_to_dict(resume) if resume is not None else None
 
         except Exception as e:
 

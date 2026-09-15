@@ -14,7 +14,20 @@ class ControlResumes:
 
     def __init__(self) -> None:
 
-        self.resumes = ControlDb(engine=engine_session).resumes
+        control = ControlDb(engine=engine_session)
+        self.resumes = control.resumes
+        self.vancancies = control.vancancies
+
+    async def _delete_vancancie_cache(self, vancancie_id:int) -> None:
+
+        vancancie = await self.vancancies.select(search="id", value=vancancie_id)
+        if vancancie is None:
+            return
+
+        await client_background.delete(name=f"vancancie:id:{vancancie['id']}")
+        await client_background.delete(name=f"vancancie:name:{vancancie['name']}")
+        await client_background.delete(name=f"vancancie:created_by:{vancancie['created_by']}")
+        await client_background.delete(name="vancancies")
 
     #Insere e salva cache
     async def insert(self, user_id:int, vancancie_id:int, pdf:bytes,
@@ -29,34 +42,56 @@ class ControlResumes:
         await client_background.hset(name=f"resume:id:{resume['id']}", data=cache_data)
         await client_background.hset(name=f"resume:user_id:{resume['user_id']}", data=cache_data)
         await client_background.hset(name=f"resume:vancancie_id:{resume['vancancie_id']}", data=cache_data)
+        await client_background.hset(
+            name=f"resume:user_id+vancancie_id:{resume['user_id']}:{resume['vancancie_id']}",
+            data=cache_data
+        )
+        await client_background.delete(name="resumes")
+        await self._delete_vancancie_cache(vancancie_id=resume["vancancie_id"])
 
         return resume
 
     #Busca cache, se for nulo, pega do banco
-    async def select(self, search:Literal["id", "user_id", "vancancie_id"], value:int) -> None|dict:
+    async def select(self, user_id:int|None=None, vancancie_id:int|None=None, id:int|None=None,
+                     get_all:bool=False) -> None|dict|list[dict]:
 
-        match search:
-
-            case "id":
-                name = f"resume:id:{value}"
-
-            case "user_id":
-                name = f"resume:user_id:{value}"
-
-            case "vancancie_id":
-                name = f"resume:vancancie_id:{value}"
-
+        if get_all:
+            name = "resumes"
+        elif id is not None and user_id is not None and vancancie_id is not None:
+            name = f"resume:id:{id}:user_id:{user_id}:vancancie_id:{vancancie_id}"
+        elif id is not None:
+            name = f"resume:id:{id}"
+        else:
+            name = f"resume:user_id+vancancie_id:{user_id}:{vancancie_id}"
         cache = await client_background.get(name=name, hash=True)
 
         if cache:
-            return ChangeTypes.from_cache(cache)
+            cache_data = ChangeTypes.from_cache(cache)
 
-        resume = await self.resumes.select(search=search, value=value)
+            if get_all and "items" in cache_data:
+                return [ChangeTypes.from_cache(item) for item in cache_data["items"]]
+
+            if not get_all:
+                return cache_data
+
+        resume = await self.resumes.select(
+            id=id,
+            user_id=user_id,
+            vancancie_id=vancancie_id,
+            get_all=get_all
+        )
         if resume is None:
             return None
 
+        if get_all:
+            items = [ChangeTypes.to_cache(item) for item in resume]
+            cache_data = ChangeTypes.to_cache({"items": items})
+            await client_background.hset(name="resumes", data=cache_data)
+            return resume
+
         cache_data = ChangeTypes.to_cache(resume)
 
+        await client_background.hset(name=name, data=cache_data)
         await client_background.hset(name=f"resume:id:{resume['id']}", data=cache_data)
         await client_background.hset(name=f"resume:user_id:{resume['user_id']}", data=cache_data)
         await client_background.hset(name=f"resume:vancancie_id:{resume['vancancie_id']}", data=cache_data)
@@ -77,13 +112,21 @@ class ControlResumes:
         await client_background.delete(name=f"resume:id:{resume['id']}")
         await client_background.delete(name=f"resume:user_id:{resume['user_id']}")
         await client_background.delete(name=f"resume:vancancie_id:{resume['vancancie_id']}")
+        await client_background.delete(
+            name=f"resume:user_id+vancancie_id:{resume['user_id']}:{resume['vancancie_id']}"
+        )
+        await client_background.delete(
+            name=f"resume:id:{resume['id']}:user_id:{resume['user_id']}:vancancie_id:{resume['vancancie_id']}"
+        )
+        await client_background.delete(name="resumes")
+        await self._delete_vancancie_cache(vancancie_id=resume["vancancie_id"])
 
         return resume
 
     #Deleta curriculo e cache
     async def delete(self, id:int) -> None:
 
-        resume = await self.select(search="id", value=id)
+        resume = await self.select(id=id)
         if resume is None:
             return
 
@@ -92,3 +135,11 @@ class ControlResumes:
         await client_background.delete(name=f"resume:id:{resume['id']}")
         await client_background.delete(name=f"resume:user_id:{resume['user_id']}")
         await client_background.delete(name=f"resume:vancancie_id:{resume['vancancie_id']}")
+        await client_background.delete(
+            name=f"resume:user_id+vancancie_id:{resume['user_id']}:{resume['vancancie_id']}"
+        )
+        await client_background.delete(
+            name=f"resume:id:{resume['id']}:user_id:{resume['user_id']}:vancancie_id:{resume['vancancie_id']}"
+        )
+        await client_background.delete(name="resumes")
+        await self._delete_vancancie_cache(vancancie_id=resume["vancancie_id"])

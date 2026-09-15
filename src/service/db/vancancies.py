@@ -25,11 +25,12 @@ class ControlVancancies:
         await client_background.hset(name=f"vancancie:id:{vancancie['id']}", data=cache_data)
         await client_background.hset(name=f"vancancie:name:{vancancie['name']}", data=cache_data)
         await client_background.hset(name=f"vancancie:created_by:{vancancie['created_by']}", data=cache_data)
+        await client_background.delete(name="vancancies")
 
         return vancancie
 
     #Busca cache, se for nulo, pega do banco
-    async def select(self, search:Literal["name", "id", "created_by", "all"], value:str|int|None=None) -> None|dict:
+    async def select(self, search:Literal["name", "id", "created_by", "all"], value:str|int|None=None) -> None|dict|list[dict]:
 
 
 
@@ -49,11 +50,22 @@ class ControlVancancies:
         cache = await client_background.get(name=name, hash=True)
 
         if cache:
-            return ChangeTypes.from_cache(cache)
+            cache_data = ChangeTypes.from_cache(cache)
+
+            if search == "all" and "items" in cache_data:
+                return cache_data["items"]
+
+            if search != "all" and "resumes" in cache_data:
+                return cache_data
 
         vancancie = await self.vancancies.select(search=search, value=value)
         if vancancie is None:
             return None
+
+        if search == "all":
+            cache_data = ChangeTypes.to_cache({"items": vancancie})
+            await client_background.hset(name="vancancies", data=cache_data)
+            return vancancie
 
         cache_data = ChangeTypes.to_cache(vancancie)
 
@@ -77,6 +89,7 @@ class ControlVancancies:
         await client_background.delete(name=f"vancancie:id:{vancancie['id']}")
         await client_background.delete(name=f"vancancie:created_by:{vancancie['created_by']}")
         await client_background.delete(name=f"vancancie:name:{vancancie['name']}")
+        await client_background.delete(name="vancancies")
 
         return vancancie
 
@@ -92,3 +105,4 @@ class ControlVancancies:
         await client_background.delete(name=f"vancancie:id:{vancancie['id']}")
         await client_background.delete(name=f"vancancie:created_by:{vancancie['created_by']}")
         await client_background.delete(name=f"vancancie:name:{vancancie['name']}")
+        await client_background.delete(name="vancancies")

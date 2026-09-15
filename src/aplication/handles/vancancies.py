@@ -75,10 +75,20 @@ async def get_vancancie(vancancie:ValidSelectVancancie, user:dict|None=Depends(d
 
             instance_vancancie = await control_db.vancancies.select(search=vancancie.search, value=vancancie.value)
 
-        if user["role"] != "admin":
-            del instance_vancancie["created_by"]
+        if vancancie.search == "all":
+            for item in instance_vancancie:
+                item["created_at"] = str(item["created_at"])
 
-        instance_vancancie["created_at"] = str(instance_vancancie["created_at"])
+                if user["role"] != "admin":
+                    item.pop("created_by", None)
+                    item.pop("resumes", None)
+
+        else:
+            instance_vancancie["created_at"] = str(instance_vancancie["created_at"])
+
+            if user["role"] != "admin":
+                instance_vancancie.pop("created_by", None)
+                instance_vancancie.pop("resumes", None)
 
         return JSONResponse(
             status_code=201,
@@ -112,7 +122,7 @@ async def update_vancancie(vancancie:ValidSetVancancie, user:dict|None = Depends
 
         vancancie["created_at"] = str(vancancie["created_at"])
 
-
+       
         return JSONResponse(
             status_code=201,
             content=vancancie

@@ -9,6 +9,7 @@ from src.aplication.handles.sender import router_sender
 from src.aplication.handles.auth import router_auth
 from src.aplication.handles.admin import router_admin
 from src.aplication.handles.vancancies import router_vancancies
+from src.aplication.handles.resumes import router_resumes
 from src.aplication.midlleware import Midlleware
 from src.service.module import enviroiments
 
@@ -17,7 +18,7 @@ class Aplication:
 
     def __init__(self)-> None:
 
-        self.routes = [router_sender, router_users, router_auth, router_admin, router_vancancies]
+        self.routes = [router_sender, router_users, router_auth, router_admin, router_vancancies, router_resumes]
         self.origin = enviroiments["origin"]
         self.app = FastAPI()
 

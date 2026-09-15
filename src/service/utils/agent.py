@@ -4,7 +4,7 @@ Cria o agente, juntando ele com a sua key, prompt e enviando o email e transform
 
 from src.service.utils.sender import sender
 from src.utils.agent import analyze_agent
-from src.config.module import enviroiments, prompt
+from src.config.module import enviroiments, prompt, senders
 from src.service.db.module import control_db
 from src.service.task import task_app
 import asyncio
@@ -25,7 +25,20 @@ class AgentRH:
     async def _response(self) -> None:
 
         input = f"vancancie name: {self.name_vancancie}, description: {self.desc},name user:{self.name}, resume: {self.resume}"
-        self.res = await analyze_agent(key=enviroiments["open_ai_key"], prompt=prompt, input=input)
+        if enviroiments["environment"] != "test":
+            self.res = await analyze_agent(
+                key=enviroiments["open_ai_key"],
+                prompt=prompt,
+                input=input
+            )
+        else:
+            html = str(senders["resume_analysis_test"]).format(
+                self.name,
+                self.name_vancancie
+            )
+            self.res = (
+                f"aproved | Candidatura aprovada para {self.name_vancancie} | {html}"
+            )
 
     #Separa a resposta
     async def _get_responses(self) -> None:
