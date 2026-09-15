@@ -19,6 +19,7 @@ services:
 
   migration:
     environment: *app-environment
+    image: brayandevzn/agent_rh:migration
     build:
       context: ../..
       dockerfile: src/controller/images/Dockerfile.migration
@@ -36,6 +37,7 @@ services:
 
   api-agent:
     environment: *app-environment
+    image: brayandevzn/agent_rh:api
     ports:
       - "650:8000"
     build:
@@ -48,6 +50,7 @@ services:
     command: ["python", "-m", "uvicorn", "src.aplication.main:app","--host", "0.0.0.0","--port", "8000", "--reload"]
 
   agent:
+    image: brayandevzn/agent_rh:agent
     environment: *app-environment
     build:
       context: ../..

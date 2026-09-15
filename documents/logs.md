@@ -2,67 +2,71 @@
 
 ## Responsabilidade
 
-A camada `logs` fornece uma configuração padronizada de logging para todo o sistema. Cada camada cria seu logger chamando `LayerLogger(<nome>).build()`.
+A camada `logs` centraliza a configuração do logging do AgentRH. Cada módulo obtém um logger com:
 
-## Arquivo `log.py`
-
-### Classe `LayerLogger`
-
-#### `__init__(layer_name: str)`
-
-Normaliza o nome recebido removendo espaços nas extremidades e convertendo-o para minúsculas. Em seguida:
-
-- cria o formatador padrão;
-- define o arquivo como `src/logs/<layer_name>.log`;
-- recupera um logger do registro global do Python com o nome `layer.<layer_name>`.
-
-Exemplo: `LayerLogger("database")` usa o logger `layer.database` e grava em `src/logs/database.log`.
-
-#### `_create_formatter() -> logging.Formatter`
-
-Define o formato:
-
-```text
-[AAAA-MM-DD HH:MM:SS] [NÍVEL] [NOME_DO_LOGGER]: mensagem
+```python
+logger = LayerLogger("database").build()
 ```
 
-#### `_add_console_handler()`
+## Formato
 
-Cria um `StreamHandler` direcionado a `sys.stderr`, aplica o formatador e adiciona o handler ao logger. A escolha de `stderr` mantém logs separados da saída normal da aplicação.
+As mensagens seguem:
 
-#### `_add_file_handler()`
+```text
+[AAAA-MM-DD HH:MM:SS] [NÍVEL] [layer.nome]: mensagem
+```
 
-Cria um `FileHandler` com UTF-8 apontando para o arquivo da camada. O arquivo é criado ou aberto quando o logger é configurado.
+Cada logger possui dois destinos:
 
-#### `_configure_logger()`
+- `StreamHandler` em `stderr`, visível no terminal e nos logs Docker;
+- `FileHandler` UTF-8 em `src/logs/<camada>.log`.
 
-Configura nível `INFO`, desativa propagação para loggers ancestrais, remove handlers já existentes e adiciona novamente os handlers de console e arquivo.
+## `LayerLogger`
 
-A limpeza impede duplicação de mensagens quando o mesmo logger é reconstruído. Como loggers de mesmo nome são globais dentro do processo, uma nova construção substitui os handlers configurados anteriormente para aquela camada.
+`src/logs/log.py` normaliza o nome da camada, cria o formatador, remove handlers anteriores do mesmo logger e instala os dois novos handlers. A propagação para o logger raiz é desativada para evitar duplicação.
 
-#### `build() -> logging.Logger`
+## Loggers atuais
 
-Executa a configuração completa e retorna um `logging.Logger` padrão, pronto para chamadas como `info`, `warning` e `error`.
-
-## Loggers usados pelo projeto
-
-| Nome passado | Arquivo produzido | Principais consumidores |
+| Logger | Arquivo | Consumidores |
 | --- | --- | --- |
-| `auth` | `src/logs/auth.log` | Hash e JWT |
-| `cache` | `src/logs/cache.log` | Conexão e operações Redis |
-| `config` | `src/logs/config.log` | Ambiente e leitura do prompt |
-| `database` | `src/logs/database.log` | Engine, migração e repositórios |
-| `tasks` | `src/logs/tasks.log` | Configuração do Celery |
-| `utils` | `src/logs/utils.log` | OpenAI e e-mail |
+| `layer.aplication` | `aplication.log` | Handlers HTTP |
+| `layer.auth` | `auth.log` | bcrypt e JWT |
+| `layer.cache` | `cache.log` | Redis |
+| `layer.config` | `config.log` | Ambiente, prompt e templates |
+| `layer.database` | `database.log` | Conexão, tabelas e repositórios |
+| `layer.service` | `service.log` | Admin e serviços |
+| `layer.tasks` | `tasks.log` | Celery |
+| `layer.utils` | `utils.log` | OpenAI e SMTP |
 
-## Ciclo de uso
+Os arquivos `.log` são ignorados por `src/logs/.gitignore`.
 
-Os módulos geralmente criam o logger no topo do arquivo. Portanto, importar a camada já configura seus handlers e pode criar ou abrir o arquivo correspondente. Durante uma operação, a mensagem inicial é registrada; em caso de erro, a exceção é registrada antes de ser relançada.
+## Uso recomendado
 
-## Pontos de atenção do comportamento atual
+```python
+logger.info("Operação iniciada")
+logger.warning("Tentativa será repetida")
+logger.error(error)
+logger.exception("Falha com traceback")
+```
 
-- Os arquivos ficam dentro de `src/logs`, misturando código-fonte e artefatos de execução.
-- Não há rotação ou limite de tamanho; os arquivos podem crescer continuamente.
-- O nível está fixo em `INFO`, sem configuração por ambiente.
-- Vários módulos da mesma camada constroem o mesmo logger. A limpeza de handlers evita duplicação, mas reconfigura o objeto compartilhado.
-- Dados incluídos diretamente nas mensagens podem ir para disco; informações sensíveis devem ser evitadas.
+Use `exception()` dentro de um `except` quando o traceback for necessário. Não registre senhas, tokens, chaves da API, conteúdo integral de currículos ou códigos temporários.
+
+## Docker
+
+Para acompanhar os processos principais:
+
+```bash
+docker compose --env-file src/config/core/.env \
+  -f src/controller/compose.yml \
+  logs -f api-agent agent migration
+```
+
+Como os Dockerfiles não montam volume persistente para `src/logs`, arquivos gravados dentro do container são perdidos quando ele é removido; a saída em `stderr` permanece disponível pelo driver de logs do Docker enquanto o container existir.
+
+## Pontos de atenção
+
+- Não há rotação, retenção ou limite de tamanho dos arquivos.
+- O nível está fixo em `INFO`.
+- Criar um logger acontece no import e abre o arquivo correspondente.
+- Reconstruir um logger remove e adiciona seus handlers novamente.
+- Logs estruturados em JSON e correlação por requisição ainda não estão configurados.

@@ -2,95 +2,81 @@
 
 ## Responsabilidade
 
-A camada `task` cria a aplicação Celery usada para executar operações em segundo plano. Ela define conexão e backend, mas as tarefas concretas são declaradas na camada `service`.
+A camada `task` cria a aplicação Celery. As tarefas concretas ficam em `src/service/cache` e `src/service/utils`.
 
-## Arquivo `celery.py`
+## `TaskControl`
 
-### Classe `TaskControl`
-
-#### `__init__(port, host, password=None) -> None`
-
-Armazena os dados de acesso ao Redis. O tipo aceito para porta é `str | int`; a senha está anotada como `str | int | None`.
-
-#### `_formated() -> None`
-
-Monta duas URLs Redis:
-
-- `self.broker`: banco lógico 1, usado como fila de mensagens;
-- `self.back`: banco lógico 2, usado como backend de resultados.
-
-Sem senha:
+`src/task/celery.py` recebe host, porta e senha opcional do Redis. `_formated()` separa broker e backend:
 
 ```text
-redis://<host>:<port>/1
-redis://<host>:<port>/2
+redis://<host>:<port>/1   # broker
+redis://<host>:<port>/2   # backend
 ```
 
-Com senha:
+Com senha, o código atual usa:
 
 ```text
-redis://<password>@<host>:<port>/1
-redis://<password>@<host>:<port>/2
+redis://<password>@<host>:<port>/<db>
 ```
 
-#### `_connect() -> None`
+`_connect()` cria `Celery(broker=..., backend=...)`, e `run()` devolve a instância.
 
-Cria `Celery(broker=self.broker, backend=self.back)` e guarda a aplicação em `self.con`. Essa etapa cria o objeto de configuração; a conexão efetiva com o broker pode acontecer posteriormente, quando uma tarefa for enviada ou quando o worker iniciar.
+## Registro das tarefas
 
-Falhas são registradas e relançadas como exceção genérica.
-
-#### `run() -> Celery`
-
-Formata as URLs, cria a aplicação e retorna a instância Celery.
-
-## Configuração na camada de serviço
-
-`src/service/task.py` lê as configurações do Redis, executa `TaskControl.run()` e expõe `task_app`.
-
-Depois, define os módulos que o worker deve importar:
+`src/service/task.py` exporta `task_app` e define os módulos importados pelo worker:
 
 ```python
 task_app.conf.imports = (
     "src.service.cache.task",
     "src.service.utils.sender",
-    "src.service.utils.agent",
+    "src.service.utils.agent"
 )
 ```
 
-Esses imports registram cinco tarefas:
+Tarefas registradas:
 
-| Tarefa | Módulo | Função |
-| --- | --- | --- |
-| `increment` | `service.cache.task` | Incrementar contador Redis |
-| `hset` | `service.cache.task` | Gravar hash Redis |
-| `delete` | `service.cache.task` | Remover chave Redis |
-| `sender` | `service.utils.sender` | Enviar e-mail |
-| `run_agent` | `service.utils.agent` | Avaliar currículo e concluir o fluxo |
+| Tarefa | Responsabilidade |
+| --- | --- |
+| `increment` | Incrementar contador Redis |
+| `hset` | Gravar hash com TTL |
+| `delete` | Invalidar chave |
+| `set` | Gravar valor temporário |
+| `sender` | Enviar e-mail HTML |
+| `run_agent` | Analisar currículo e atualizar candidatura |
 
-## Adaptação entre Celery e código assíncrono
+## Ponte síncrono/assíncrono
 
-As funções registradas no Celery são síncronas. Dentro delas, `asyncio.run()` cria um event loop temporário para executar os métodos assíncronos das outras camadas. Cada execução da tarefa abre e encerra seu próprio loop.
-
-Exemplo conceitual:
+As funções Celery são síncronas e chamam os serviços assíncronos com `asyncio.run()`:
 
 ```text
-chamador -> tarefa.delay(...) -> Redis broker -> worker Celery
-worker -> função síncrona -> asyncio.run(...) -> função assíncrona
+API → task.delay() → Redis /1 → worker Celery
+                                   ↓
+                              asyncio.run()
+                                   ↓
+                        banco, cache, OpenAI ou SMTP
 ```
 
-## Relação entre os bancos lógicos Redis
+## Worker
 
-- O cliente de cache de dados não informa um número de banco e, portanto, usa o padrão do Redis, normalmente `/0`.
-- O broker Celery usa `/1`.
-- O backend de resultados usa `/2`.
+Localmente:
 
-Essa separação reduz colisões entre chaves de aplicação, mensagens da fila e resultados de tarefas.
+```bash
+python -m celery \
+  -A src.service.task:task_app \
+  worker --loglevel=INFO
+```
 
-## Pontos de atenção do comportamento atual
+No Docker, `Dockerfile.worker` usa esse comando como `CMD`, e o serviço se chama `agent`.
 
-- Enfileirar com `.delay()` confirma o envio ao broker, não a conclusão da operação.
-- Os controladores de serviço não guardam o identificador retornado por `.delay()`, então não acompanham status ou resultado.
-- Não há configuração explícita de retry, timeout, serializador, fila ou política de falha.
-- `bytes` é aceito por `run_agent`; o serializador Celery configurado no ambiente precisa suportar esse argumento.
-- A URL com senha segue o formato atual do código. Senhas com caracteres reservados podem precisar de codificação para URL.
-- Worker e processo chamador precisam compartilhar as mesmas variáveis de ambiente e alcançar o mesmo Redis e banco.
+## Resultado e acompanhamento
+
+O backend usa Redis `/2`, mas os chamadores atuais não armazenam o `AsyncResult` retornado por `.delay()`. O sistema trabalha em fire-and-forget: confirma que a tarefa foi enviada, sem expor endpoint de progresso.
+
+## Pontos de atenção
+
+- `.delay()` não significa que a tarefa terminou.
+- Não há política explícita de retry, timeout, fila, prioridade ou dead-letter.
+- Bytes enviados à tarefa dependem do serializador Celery configurado.
+- Worker, API e migration precisam compartilhar banco, Redis e variáveis de ambiente.
+- Senhas Redis com caracteres reservados podem exigir URL encoding.
+- Escalar workers pode aumentar concorrência sobre SMTP, OpenAI e banco.

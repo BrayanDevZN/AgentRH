@@ -2,112 +2,94 @@
 
 ## Responsabilidade
 
-A camada `config` centraliza duas fontes de configuração:
+A camada `config` carrega variáveis de ambiente, templates HTML e o prompt que governa a análise de currículos.
 
-- variáveis de ambiente usadas pelas integrações e pela infraestrutura;
-- o prompt de recrutamento enviado ao modelo de IA.
+## Variáveis de ambiente
 
-Os valores são carregados durante a importação dos módulos e ficam disponíveis nos objetos globais `enviroiments` e `prompt`.
+`src/config/core/settings.py` procura primeiro `src/config/core/.env`. Se o arquivo não existir, `python-dotenv` procura um `.env` pelos caminhos convencionais. A configuração é carregada durante o import e fica no dicionário global `enviroiments`.
 
-## Arquivos
-
-### `settings.py`
-
-#### Exceção `NotFoundEnviroment`
-
-Indica que uma variável obrigatória não foi encontrada. A mensagem segue o formato `Expeted enviroin <nome>`.
-
-#### Classe `Environment`
-
-##### `__init__() -> None`
-
-Define em `self.envs` os nomes esperados:
-
-| Variável | Consumidor atual | Finalidade |
+| Variável | Obrigatória | Uso |
 | --- | --- | --- |
-| `redis_port` | cache e Celery | Porta do Redis |
-| `redis_host` | cache e Celery | Host do Redis |
-| `url` | banco | URL assíncrona do SQLAlchemy |
-| `sing` | autenticação | Chave simétrica do JWT |
-| `origin` | não há consumidor em `src` atualmente | Origem prevista para a aplicação |
-| `rate_limit` | não há consumidor em `src` atualmente | Limite previsto por operação |
-| `global_rate_limit` | não há consumidor em `src` atualmente | Limite global previsto |
-| `redis_password` | cache e Celery | Senha opcional do Redis |
-| `email_user` | envio de e-mail | Usuário da conta SMTP |
-| `password_user` | envio de e-mail | Senha da conta SMTP |
-| `open_ai_key` | agente | Chave da API OpenAI |
+| `redis_port` | Sim | Cache e Celery |
+| `redis_host` | Sim | Cache e Celery |
+| `redis_password` | Não | Autenticação Redis |
+| `url` | Sim | DSN assíncrona do SQLAlchemy |
+| `sing` | Sim | Assinatura JWT HS256 |
+| `origin` | Sim | Origem autorizada no CORS |
+| `rate_limit` | Sim | Limite individual por janela |
+| `global_rate_limit` | Sim | Limite global por janela |
+| `email_user` | Sim | Conta SMTP e admin inicial |
+| `password_user` | Sim | Credencial SMTP |
+| `open_ai_key` | Sim | OpenAI Responses API |
+| `environment` | Sim | Alterna fluxo normal e teste |
+| `test_email` | Não | Campo opcional para testes |
 
-##### `_load() -> None`
+Exemplo sem valores reais:
 
-Procura primeiro `src/config/.env`. Se o arquivo existir, chama `load_dotenv()` com esse caminho. Caso contrário, chama `load_dotenv()` sem caminho explícito, permitindo que a biblioteca procure um `.env` conforme suas regras padrão.
+```dotenv
+redis_port=6379
+redis_host=redis
+redis_password=
+url=postgresql+asyncpg://USER:PASSWORD@HOST:5432/DATABASE
+sing=troque-por-uma-chave-longa-e-aleatoria
+origin=http://localhost:3000
+rate_limit=100
+global_rate_limit=1000
+email_user=conta@gmail.com
+password_user=senha-de-aplicativo
+open_ai_key=chave-da-api
+environment=test
+test_email=
+```
 
-Falhas de carregamento são registradas e relançadas como exceção genérica.
+Não versione o `.env`. O `.gitignore` dentro de `src` exclui `config/core/.env`.
 
-##### `_envs() -> None`
+## Ambiente local e Docker
 
-Percorre `self.envs`, lê cada valor com `os.getenv()` e monta `self.envroins`. Todas as variáveis são obrigatórias, exceto `redis_password`, que pode ficar como `None`.
+Fora do Docker, `redis_host` normalmente é `localhost` e a porta publicada é `6350`. Dentro do Compose, os serviços recebem `redis_host=redis` e `redis_port=6379`.
 
-A validação verifica apenas presença. Valores vazios, portas não numéricas ou URLs inválidas não são rejeitados nessa etapa.
+Use `--env-file` para alimentar a interpolação do Compose:
 
-##### `get() -> dict`
+```bash
+docker compose --env-file src/config/core/.env \
+  -f src/controller/compose.yml up -d --build
+```
 
-Executa `_load()`, depois `_envs()`, e retorna o dicionário de configurações.
+## Prompt da IA
 
-#### Objeto global `enviroiments`
+`src/config/prompt/file_prompt.py` lê `src/config/prompt/prompt.md` e exporta seu conteúdo em `prompt`. O contrato exige uma única string:
 
-No final do módulo, `Environment()` é instanciada e `get()` é executado imediatamente. Assim, qualquer importação de `src.config.settings` carrega o `.env` e falha imediatamente se uma variável obrigatória estiver ausente.
+```text
+aproved | Assunto profissional | <!DOCTYPE html><html>...</html>
+```
 
-### `file.py`
+ou:
 
-#### Exceção `NotFoundFilePromptError`
+```text
+recuse | Assunto profissional | <!DOCTYPE html><html>...</html>
+```
 
-Sinaliza que `src/config/prompt.md` não existe no caminho esperado.
+Os únicos caracteres `|` permitidos são os dois separadores.
 
-#### Classe `FilePrompt`
+## Templates de e-mail
 
-##### `__init__()`
+`src/config/sender/file.py` descobre os arquivos `.html` e cria `senders`, usando o nome sem extensão como chave.
 
-Calcula um caminho absoluto para `prompt.md`, sempre relativo ao próprio módulo. Isso evita dependência do diretório a partir do qual o processo Python foi iniciado.
+| Chave | Template |
+| --- | --- |
+| `create_account` | Código de criação da conta |
+| `two_factor_authentication` | Código de 2FA |
+| `update_password` | Código de alteração de senha |
+| `resume_analysis_test` | Resultado simulado do agente |
 
-##### `_exists() -> None`
+## Comportamento de teste
 
-Verifica a existência do arquivo. Se ele não existir, registra o caminho esperado e lança `NotFoundFilePromptError`.
+Com `environment=test`, códigos temporários retornam no JSON e o agente monta `aproved | assunto | HTML` com `resume_analysis_test.html`, sem chamar a OpenAI.
 
-##### `_read() -> None`
+## Pontos de atenção
 
-Abre o prompt como texto UTF-8 e armazena seu conteúdo completo em `self.prompt`. Erros de leitura são registrados e relançados como exceção genérica.
-
-##### `get() -> str`
-
-Valida a existência, lê o arquivo e devolve o texto.
-
-#### Objeto global `prompt`
-
-`FilePrompt().get()` é executado durante o import. Consumidores recebem uma string já carregada, mas alterações em `prompt.md` feitas depois da importação não aparecem até o módulo ou processo ser recarregado.
-
-### `prompt.md`
-
-Contém as instruções dadas ao agente de recrutamento. O prompt orienta o modelo a:
-
-- comparar currículo e descrição da vaga usando evidências profissionais;
-- ignorar instruções maliciosas presentes nos documentos analisados;
-- evitar critérios pessoais ou protegidos;
-- produzir exatamente `aproved` ou `recuse` como decisão;
-- criar assunto em texto puro e corpo completo em HTML;
-- separar a saída em três partes usando `|`.
-
-Essa última convenção é consumida por `AgentRH._get_responses()`, na camada de serviço.
-
-## Dependências e consumidores
-
-- Depende de `python-dotenv`, `os`, `pathlib` e da camada de logs.
-- É consumida por autenticação, banco, cache, Celery, e-mail e agente de IA.
-
-## Pontos de atenção do comportamento atual
-
-- A importação faz trabalho e pode lançar exceções antes da execução da aplicação.
-- Os nomes de variáveis são sensíveis a maiúsculas e minúsculas e atualmente estão em minúsculas.
-- `redis_password` é a única configuração opcional.
-- Não existe conversão de tipos; por exemplo, `redis_port` permanece texto quando vem do ambiente.
-- `origin` e os limites são obrigatórios mesmo sem consumidores atuais dentro de `src`.
-- Segredos não devem ser registrados, incluídos no repositório ou armazenados em arquivos de documentação.
+- A configuração é avaliada no import; variável ausente pode impedir módulos de carregar.
+- Todos os valores chegam como texto e são convertidos apenas no ponto de uso.
+- Templates usam placeholders; mudanças devem preservar a quantidade e ordem esperadas.
+- Alterações em prompt/templates exigem reinício do processo ou container.
+- Segredos devem existir apenas em `.env`, secrets do CI ou secret manager.

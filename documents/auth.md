@@ -2,108 +2,108 @@
 
 ## Responsabilidade
 
-A camada `auth` contém as operações criptográficas do projeto. Ela não consulta usuários, não valida permissões e não implementa um fluxo completo de login. Sua função atual é:
+A camada `auth` fornece duas primitivas independentes:
 
-- transformar uma senha em hash usando bcrypt;
-- comparar uma senha em texto puro com um hash bcrypt;
-- gerar um token JWT a partir de um payload;
-- validar e decodificar um token JWT.
+- hash e comparação de senha com bcrypt;
+- criação e leitura de JWT com HS256.
 
-A instanciação dessas classes com as configurações da aplicação acontece em `src/service/auth.py`.
+Ela não acessa banco, cookies ou permissões. O fluxo HTTP completo é implementado em `src/aplication/handles/auth.py`, enquanto `src/service/auth.py` injeta a chave de assinatura e expõe instâncias prontas.
 
-## Arquivos
+## `AuthHash`
 
-### `hash.py`
+Arquivo: `src/auth/hash.py`.
 
-Implementa a classe `AuthHash`. O módulo cria um logger da camada `auth` durante a importação.
+### `encode(password: str) -> str`
 
-#### Classe `AuthHash`
+Converte a senha para UTF-8, cria um salt aleatório com `bcrypt.gensalt()`, gera o hash e retorna uma string. Por causa do salt, duas chamadas para a mesma senha normalmente produzem valores diferentes.
 
-A classe não mantém estado. Seus métodos são estáticos e assíncronos.
+```python
+hashed = await AuthHash.encode(password="Senha123")
+```
 
-##### `encode(password: str) -> str`
+### `check(password: str, hashed_passowrd: str) -> bool`
 
-Cria um hash para a senha recebida.
+Compara texto puro e hash por `bcrypt.checkpw()`. A validação correta é sempre feita por esse método, nunca comparando duas strings de hash.
 
-Fluxo interno:
+```python
+valid = await AuthHash.check(
+    password="Senha123",
+    hashed_passowrd=hashed
+)
+```
 
-1. Registra que a senha será criptografada.
-2. Codifica o texto em UTF-8.
-3. Cria um salt aleatório com `bcrypt.gensalt()`.
-4. Gera o hash com `bcrypt.hashpw()`.
-5. Decodifica o resultado binário para texto UTF-8.
-6. Retorna o hash como `str`.
+O nome `hashed_passowrd` está grafado assim na assinatura atual e precisa ser preservado em argumentos nomeados.
 
-Como o salt é aleatório, chamadas diferentes para a mesma senha normalmente geram hashes diferentes. A validação deve ser feita com `check`, nunca comparando hashes diretamente.
+## `AuthJwt`
 
-Em caso de falha, o erro original é registrado e relançado dentro de uma exceção genérica.
+Arquivo: `src/auth/jwt.py`.
 
-##### `check(password: str, hashed_passowrd: str) -> bool`
+### Construção
 
-Compara a senha em texto puro com um hash armazenado.
+```python
+auth = AuthJwt(sing="chave-secreta")
+```
 
-Os dois valores são convertidos em bytes e enviados para `bcrypt.checkpw()`. O método retorna `True` se a senha corresponder ao hash e `False` caso contrário. O nome `hashed_passowrd` contém um erro ortográfico, mas deve ser usado exatamente assim em chamadas nomeadas enquanto a assinatura atual permanecer.
+`sing` é a chave simétrica usada para assinar e verificar tokens. O algoritmo é fixo em `HS256`.
 
-### `jwt.py`
+### `encode(payload) -> str`
 
-Implementa a classe `AuthJwt` usando a biblioteca PyJWT e cria um logger `auth` durante a importação.
+Encaminha o payload para `jwt.encode()`. O projeto usa dicionários, apesar de a anotação atual indicar `str`.
 
-#### Classe `AuthJwt`
+### `decode(token: str) -> dict`
 
-##### `__init__(sing: str) -> None`
+Valida assinatura e algoritmo e devolve o payload. Datas do projeto são armazenadas como texto e validadas manualmente na aplicação; o código atual não usa automaticamente uma claim JWT `exp` numérica.
 
-Recebe a chave usada para assinar e verificar tokens. A chave é armazenada em `self.sing`. O algoritmo é fixado em `HS256` e armazenado em `self.alg`.
+## Instâncias de serviço
 
-Como HS256 é simétrico, a mesma chave deve ser usada para gerar e validar o token. No serviço, ela vem da variável de ambiente `sing`.
-
-##### `encode(payload: str) -> str`
-
-Entrega `payload`, algoritmo e chave para `jwt.encode()` e retorna o token produzido. Embora a anotação declare `payload: str`, o uso atual do projeto passa um dicionário, que é o formato esperado para um conjunto de claims JWT.
-
-O método não adiciona automaticamente claims como `exp`, `iat`, `sub` ou `iss`. Portanto, validade temporal, identidade do titular e emissor só existirão se o chamador os incluir no payload.
-
-##### `decode(token: str) -> dict`
-
-Chama `jwt.decode()` com a chave configurada e restringe a validação ao algoritmo `HS256`. Se assinatura, formato ou claims validados pela biblioteca forem inválidos, registra e relança o erro dentro de uma exceção genérica.
-
-### `module.py`
-
-É um módulo de conveniência. Apenas reexporta `AuthHash` e `AuthJwt`, permitindo que a camada de serviço importe as duas classes de um único local.
-
-## Integração com a camada de serviço
-
-`src/service/auth.py` cria dois objetos globais:
+`src/service/auth.py` cria:
 
 ```python
 auth_jwt = AuthJwt(sing=enviroiments["sing"])
 auth_hash = AuthHash()
 ```
 
-Ao importar esse serviço, `src.config.settings` também é importado e todas as variáveis obrigatórias são validadas. Mesmo que o consumidor queira apenas usar bcrypt, a importação de `src.service.auth` depende do conjunto completo de configurações exigido por `Environment`.
+Importar esse módulo exige que as configurações obrigatórias estejam disponíveis.
 
-## Fluxo de autenticação demonstrado nos testes
+## Fluxo de login
 
-O teste atual executa este fluxo:
+O login usa até três cookies:
 
-1. Monta um payload com e-mail e senha.
-2. Substitui a senha em texto puro pelo hash bcrypt.
-3. Coloca o payload completo dentro de um JWT.
-4. Decodifica o token.
-5. Compara uma senha em texto puro com o hash extraído.
+```text
+Credenciais
+   ↓
+GET /auth/
+   ├── sem 2FA → X-user_token + X-user_refresh_token
+   └── com 2FA → X-auth2_token
+                       ↓
+                 POST /sender/2fa
+                       ↓
+                 GET /auth/ + code
+                       ↓
+             tokens de acesso e renovação
+```
 
-Esse teste comprova geração e leitura do token e comparação do hash. Ele não consulta o banco, não autentica um usuário cadastrado e não testa expiração ou autorização.
+Usuários comuns fornecem senha. O admin inicial pode ter `password=None`, possui `permission=True` e entra pelo código de autenticação.
 
-## Dependências
+## Política de senha
 
-- `bcrypt`: geração e comparação de hashes.
-- `PyJWT`, importada como `jwt`: codificação e decodificação de tokens.
-- `src.logs.log`: registro das operações.
-- `src.config.settings`: fornecimento da chave, quando acessada pela camada de serviço.
+`ValidPassword` exige no mínimo oito caracteres e pelo menos:
 
-## Pontos de atenção do comportamento atual
+- uma letra maiúscula;
+- uma letra minúscula;
+- uma letra;
+- um dígito.
 
-- A senha com hash está sendo incluída no payload do JWT no teste. Mesmo sendo um hash, credenciais não devem ser usadas como conteúdo de sessão sem necessidade.
-- Tokens não recebem expiração automaticamente.
-- Métodos são assíncronos, mas bcrypt e PyJWT são chamados de forma síncrona internamente.
-- A coluna `Users.password` está limitada a 50 caracteres, enquanto hashes bcrypt normalmente são maiores; consulte a documentação da camada de banco.
-- A classe fornece primitivas criptográficas, mas regras de login, bloqueio, renovação e autorização ainda precisam existir em uma camada superior.
+A regra é aplicada na criação e na alteração de senha.
+
+## Proteção de rotas
+
+`UtilsDepends` lê `X-user_token`, valida `expire`, busca o usuário por `public_id` e verifica o papel exigido. Alterações administrativas e mutações de vagas requerem `role="admin"`.
+
+## Pontos de atenção
+
+- HS256 exige proteção rigorosa da variável `sing`.
+- Tokens não usam atualmente a claim padrão `exp`; a aplicação interpreta um campo textual próprio.
+- Os métodos são `async`, mas bcrypt e PyJWT executam trabalho síncrono internamente.
+- Alguns handlers transformam exceções HTTP em `501`; consumidores devem observar o corpo `detail` durante a depuração.
+- Cookies não definem `secure=True` no código atual; produção HTTPS deve revisar essa configuração.
