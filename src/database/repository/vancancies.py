@@ -1,0 +1,164 @@
+from src.logs.log import LayerLogger
+logger = LayerLogger("database").build()
+
+
+"""
+Controla a tabela vancancies
+"""
+from sqlalchemy import select, delete
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.orm import selectinload
+from src.database.models.vancancies import Vancancies
+from src.database.models.resumes import Resumes
+from src.database.repository.serializer import model_to_dict
+from typing import Literal
+import base64
+
+class VancanciesDbError(Exception):
+    pass
+class VancanciesDb:
+
+    def __init__(self, session_engine:async_sessionmaker)-> None:
+
+        self.eng = session_engine
+
+    @staticmethod
+    def _to_dict_with_resumes(vancancie:Vancancies) -> dict:
+
+        data = model_to_dict(vancancie)
+        data["created_at"] = str(data["created_at"])
+        data["resumes"] = []
+
+        for resume in vancancie.resumes:
+            resume_data = model_to_dict(resume)
+            resume_data["pdf"] = base64.b64encode(resume_data["pdf"]).decode("utf-8")
+            resume_data["created_at"] = str(resume_data["created_at"])
+            data["resumes"].append(resume_data)
+
+        return data
+
+
+    #Insere na tabela
+    async def insert(self, created_by:int, name:str, description:str) -> dict:
+
+        try:
+
+            logger.info(f"Criando vaga {name}...")
+
+            async with self.eng.begin() as session:
+
+                #Objeto de vancancies preenchido
+                instance = Vancancies(created_by=created_by, name=name, description=description)
+
+                session.add(instance)
+                await session.flush()
+                await session.refresh(instance)
+
+                return model_to_dict(instance)
+
+
+        except Exception as e:
+
+            logger.error(e)
+            raise VancanciesDbError(e)
+
+    async def select(self, search:Literal["name", "id", "created_by", "all"], value:str|int|None=None) -> dict|list[dict]|None:
+
+
+        try:
+
+            logger.info(f"Buscando vaga pelo {search}...")
+
+            items = {
+                
+                "name": Vancancies.name,
+                "id": Vancancies.id,
+                "created_by": Vancancies.created_by
+            }
+
+            async with self.eng.begin() as session:
+                if search !="all":
+
+                    query = select(Vancancies).options(selectinload(Vancancies.resumes)).where(items[search] == value)
+
+                else:
+
+                    query = select(Vancancies).options(selectinload(Vancancies.resumes))
+
+                result = await session.execute(query)
+
+                if search == "all":
+                    vancancies = result.scalars().all()
+                    return [
+                        self._to_dict_with_resumes(vancancie)
+                        for vancancie in vancancies
+                    ]
+
+                vancancie = result.scalars().first()
+                return self._to_dict_with_resumes(vancancie) if vancancie is not None else None
+
+        except Exception as e:
+
+            logger.error(e)
+            raise VancanciesDbError(e)
+
+    async def update(self, search:Literal["name", "id", "created_by"], field:str|int,
+                     set:Literal["name", "description"], value:str) -> dict:
+
+
+        try:
+
+            logger.info(f"Atualizando {set} da vaga...")
+
+            items = {
+                "name": Vancancies.name,
+                "id": Vancancies.id,
+                "created_by": Vancancies.created_by
+            }
+
+            async with self.eng.begin() as session:
+
+                #pega a vaga e usa lock
+                query = select(Vancancies).options(selectinload(Vancancies.resumes)).where(items[search] == field).with_for_update()
+                vancancie = await session.scalar(query)
+
+                if vancancie is None:
+
+                    return {}
+
+
+                match set:
+
+                    case "name":
+                        vancancie.name = value
+                    case "description":
+                        vancancie.description = value
+
+                await session.flush()
+                await session.refresh(vancancie)
+                return model_to_dict(vancancie)
+
+        except Exception as e:
+
+            logger.error(e)
+            raise VancanciesDbError(e)
+
+
+    async def delete(self, id:int) -> dict:
+
+        try:
+
+            logger.info("Deletando vaga...")
+
+            async with self.eng.begin() as session:
+
+                query = delete(Vancancies).where(Vancancies.id == id)
+
+                result = await session.execute(query)
+                return {"deleted": result.rowcount > 0}
+
+
+        except Exception as e:
+
+            logger.error(e)
+            raise VancanciesDbError(e)

@@ -1,0 +1,56 @@
+name: functional
+
+on:
+    push:
+        branches:
+            - main
+            - develop
+    pull_request:
+        branches:
+            - main
+            - develop
+
+
+jobs:
+
+    app:
+
+        runs-on: ubuntu-latest
+        environment: develop
+
+        env:
+
+                redis_port: ${{ secrets.REDIS_PORT }}
+                redis_host: ${{ secrets.REDIS_HOST }}
+                url: ${{ secrets.URL }}
+                sing: ${{ secrets.SING }}
+                origin: ${{ secrets.ORIGIN }}
+                rate_limit: ${{ secrets.RATE_LIMIT }}
+                global_rate_limit: ${{ secrets.GLOBAL_RATE_LIMIT }}
+                email_user: ${{ secrets.EMAIL_USER }}
+                password_user: ${{ secrets.PASSWORD_USER }}
+                open_ai_key: ${{ secrets.OPEN_AI_KEY}}
+                environment: ${{ secrets.ENVIRONMENT }}
+
+        steps:
+
+            - uses: actions/checkout@v4
+            - uses: actions/setup-python@v5
+              with:
+                python-version: "3.14"
+
+            - name: run compose
+              run: |
+               docker compose -f src/controller/compose.yml up -d --build
+
+            - name: tests
+              run: |
+               pip install requests
+               pip install python-dotenv
+               python -m tests.functional.users
+               python -m tests.functional.auth
+               python -m tests.functional.admin
+               python -m tests.functional.vancancies
+               pip install python-multipart
+               python -m tests.functional.resumes
+              

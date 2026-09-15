@@ -1,7 +1,7 @@
 <h1 align="center">AgentRH</h1>
 
 <p align="center">
-  <img src="documents/assets/agentrh-flow.gif" alt="Fluxo animado do AgentRH" width="100%">
+  <img src="assets/agentrh-flow.gif" alt="Fluxo animado do AgentRH" width="100%">
 </p>
 
 <p align="center">
@@ -163,8 +163,6 @@ O Compose inclui Redis, mas **não inclui PostgreSQL**. A URL do banco deve apon
 
 ## Início rápido com Docker
 
-Este é o caminho recomendado para quem quer apenas executar o AgentRH. O arquivo `compose.v1.yml` usa as imagens prontas publicadas no Docker Hub; não é necessário instalar Python nem construir as imagens localmente.
-
 ### 1. Clone o projeto
 
 ```bash
@@ -178,7 +176,7 @@ cd AgentRH
 cp src/config/core/.env.example src/config/core/.env
 ```
 
-Abra `src/config/core/.env` e substitua todos os valores de exemplo. O Compose lê esse arquivo por meio de `env_file`, portanto não é necessário usar `--env-file` nesse modo.
+Se `.env.example` ainda não estiver disponível na sua revisão, crie manualmente `src/config/core/.env` usando a tabela da próxima seção.
 
 ### 3. Ajuste o DSN do PostgreSQL
 
@@ -190,64 +188,49 @@ url=postgresql+asyncpg://agentrh:senha@host-do-postgres:5432/agentrh
 
 Se o banco estiver no host e o Docker rodar no Linux, use um hostname alcançável pelos containers. `localhost` dentro do container aponta para o próprio container.
 
-### 4. Baixe as imagens
+### 4. Construa e inicie
 
 ```bash
-docker compose -f compose.v1.yml pull
+docker compose --env-file src/config/core/.env \
+  -f src/controller/compose.yml \
+  up -d --build
 ```
 
-As imagens usadas são:
+O bootstrap executa, em ordem:
 
-| Serviço | Imagem |
-| --- | --- |
-| API | `brayandevzn/agent_rh:api-v1` |
-| Worker | `brayandevzn/agent_rh:agent-v1` |
-| Bootstrap | `brayandevzn/agent_rh:migration-v1` |
-| Cache/broker | `redis:alpine` |
+1. Redis;
+2. criação das tabelas;
+3. criação do admin inicial;
+4. API;
+5. worker Celery.
 
-### 5. Inicie os serviços
+### 5. Confira os serviços
 
 ```bash
-docker compose -f compose.v1.yml up -d
+docker compose --env-file src/config/core/.env \
+  -f src/controller/compose.yml \
+  ps
 ```
-
-O `-d` mantém os containers em segundo plano. Para acompanhar a inicialização:
 
 ```bash
-docker compose -f compose.v1.yml logs -f
+docker compose --env-file src/config/core/.env \
+  -f src/controller/compose.yml \
+  logs -f api-agent agent migration
 ```
 
-Use `Ctrl+C` para sair dos logs; os containers continuarão ativos.
+### 6. Abra a API
 
-### 6. Confira os serviços
+- Swagger UI: `http://localhost:650/docs`
+- OpenAPI JSON: `http://localhost:650/openapi.json`
+- Redis no host: `localhost:6350`
+
+### 7. Encerre o ambiente
 
 ```bash
-docker compose -f compose.v1.yml ps
+docker compose --env-file src/config/core/.env \
+  -f src/controller/compose.yml \
+  down
 ```
-
-### 7. Abra a API
-
-- Swagger UI: `http://localhost:8000/docs`
-- OpenAPI JSON: `http://localhost:8000/openapi.json`
-
-O Redis fica disponível apenas para os outros containers pela rede interna, em `redis:6379`; ele não ocupa a porta `6379` do computador.
-
-### 8. Atualize ou encerre
-
-Para baixar versões mais recentes das mesmas tags e recriar os containers:
-
-```bash
-docker compose -f compose.v1.yml pull
-docker compose -f compose.v1.yml up -d
-```
-
-Para parar e remover os containers e a rede do projeto:
-
-```bash
-docker compose -f compose.v1.yml down
-```
-
-Esse comando não remove as imagens baixadas nem os dados de serviços externos.
 
 ## Configuração do ambiente
 
@@ -305,7 +288,7 @@ Os exemplos abaixo usam `curl` e um arquivo `cookies.txt` para preservar os cook
 ### 1. Solicitar código de cadastro
 
 ```bash
-curl -X POST http://localhost:8000/sender/ \
+curl -X POST http://localhost:650/sender/ \
   -H 'Content-Type: application/json' \
   -d '{"name":"Ada Lovelace","email":"ada.lovelace@gmail.com"}'
 ```
@@ -321,7 +304,7 @@ Nos demais ambientes, o código é enviado por e-mail e não aparece na resposta
 ### 2. Criar usuário
 
 ```bash
-curl -X POST http://localhost:8000/users/ \
+curl -X POST http://localhost:650/users/ \
   -c cookies.txt \
   -H 'Content-Type: application/json' \
   -d '{
@@ -341,7 +324,7 @@ A criação bem-sucedida grava os cookies de acesso e renovação.
 ### 3. Consultar a própria conta
 
 ```bash
-curl -X GET http://localhost:8000/users/ -b cookies.txt
+curl -X GET http://localhost:650/users/ -b cookies.txt
 ```
 
 ### 4. Entrar como admin
@@ -349,21 +332,21 @@ curl -X GET http://localhost:8000/users/ -b cookies.txt
 O admin inicial usa `email_user`, não possui senha e entra por código:
 
 ```bash
-curl -X GET http://localhost:8000/auth/ \
+curl -X GET http://localhost:650/auth/ \
   -c admin-cookies.txt \
   -H 'Content-Type: application/json' \
   -d '{"email":"conta@gmail.com"}'
 ```
 
 ```bash
-curl -X POST http://localhost:8000/sender/2fa \
+curl -X POST http://localhost:650/sender/2fa \
   -b admin-cookies.txt -c admin-cookies.txt
 ```
 
 Use o código retornado em teste ou recebido por e-mail:
 
 ```bash
-curl -X GET http://localhost:8000/auth/ \
+curl -X GET http://localhost:650/auth/ \
   -b admin-cookies.txt -c admin-cookies.txt \
   -H 'Content-Type: application/json' \
   -d '{"email":"conta@gmail.com","code":"12345"}'
@@ -372,7 +355,7 @@ curl -X GET http://localhost:8000/auth/ \
 ### 5. Criar uma vaga
 
 ```bash
-curl -X POST http://localhost:8000/vancancies/ \
+curl -X POST http://localhost:650/vancancies/ \
   -b admin-cookies.txt \
   -H 'Content-Type: application/json' \
   -d '{
@@ -395,7 +378,7 @@ Exemplo de resposta:
 ### 6. Listar vagas
 
 ```bash
-curl -X GET http://localhost:8000/vancancies/ \
+curl -X GET http://localhost:650/vancancies/ \
   -b cookies.txt \
   -H 'Content-Type: application/json' \
   -d '{"search":"all"}'
@@ -406,7 +389,7 @@ curl -X GET http://localhost:8000/vancancies/ \
 ### 7. Enviar currículo
 
 ```bash
-curl -X POST http://localhost:8000/resumes/ \
+curl -X POST http://localhost:650/resumes/ \
   -b cookies.txt \
   -F 'vancancie_id=1' \
   -F 'status=pending' \
@@ -423,7 +406,7 @@ A resposta confirma a criação. A análise continua no worker:
 ### 8. Consultar candidatura
 
 ```bash
-curl -X GET http://localhost:8000/resumes/ \
+curl -X GET http://localhost:650/resumes/ \
   -b cookies.txt \
   -H 'Content-Type: application/json' \
   -d '{"vancancie_id":1}'
@@ -446,7 +429,7 @@ O campo `pdf` volta em Base64 porque JSON não suporta bytes diretamente:
 O admin pode listar todas as candidaturas com:
 
 ```bash
-curl -X GET http://localhost:8000/resumes/ \
+curl -X GET http://localhost:650/resumes/ \
   -b admin-cookies.txt \
   -H 'Content-Type: application/json' \
   -d '{"get_all":true}'
@@ -508,43 +491,30 @@ python -m celery \
 
 ## Containers e publicação
 
-Existem dois arquivos Compose com finalidades diferentes:
-
-| Arquivo | Finalidade |
-| --- | --- |
-| `compose.v1.yml` | Uso normal com imagens prontas do Docker Hub |
-| `src/controller/compose.yml` | Desenvolvimento, construção e publicação das imagens |
-
-O Compose de desenvolvimento cria imagens com o formato `namespace/repository:tag`:
+O Compose cria imagens com o formato `namespace/repository:tag`:
 
 | Serviço | Imagem |
 | --- | --- |
-| API | `brayandevzn/agent_rh:api-v1` |
-| Worker | `brayandevzn/agent_rh:agent-v1` |
-| Bootstrap | `brayandevzn/agent_rh:migration-v1` |
+| API | `brayandevzn/agent_rh:api` |
+| Worker | `brayandevzn/agent_rh:agent` |
+| Bootstrap | `brayandevzn/agent_rh:migration` |
 
-Para construir somente as imagens, sem criar containers:
-
-```bash
-docker compose -f src/controller/compose.yml \
-  build migration api-agent agent
-```
-
-Confira as imagens locais:
+Construir:
 
 ```bash
-docker image ls brayandevzn/agent_rh
+docker compose --env-file src/config/core/.env \
+  -f src/controller/compose.yml build
 ```
 
-Autentique-se e publique as três tags:
+Autenticar e publicar:
 
 ```bash
-docker login -u brayandevzn
-docker compose -f src/controller/compose.yml \
-  push migration api-agent agent
+docker login
+docker compose --env-file src/config/core/.env \
+  -f src/controller/compose.yml push
 ```
 
-Antes do primeiro push, crie o repositório `agent_rh` no namespace `brayandevzn` do Docker Hub. O `.dockerignore` da raiz impede que o arquivo `.env` seja copiado para as imagens. O projeto possui CI automatizada, mas a publicação das imagens é manual no estado atual.
+O projeto possui CI automatizada, mas a publicação/deploy das imagens é manual no estado atual.
 
 ## Testes
 
@@ -634,7 +604,6 @@ Não existe workflow automático de CD. O badge `CD · Docker Compose manual` do
 ```text
 AgentRH/
 ├── .github/workflows/       # CI unitária, integração e funcional
-├── compose.v1.yml           # Execução com imagens publicadas
 ├── documents/               # Documentação técnica por camada
 │   └── assets/              # GIF e imagem do fluxo
 ├── src/
@@ -674,26 +643,21 @@ Antes de usar em produção, considere:
 
 ### `Expeted enviroin <nome>`
 
-A variável não foi encontrada. Confira se `src/config/core/.env` existe e se todos os campos do `.env.example` foram preenchidos. O `compose.v1.yml` carrega esse arquivo automaticamente com `env_file`.
+A variável não foi encontrada. Confira `src/config/core/.env` e, no Compose, mantenha `--env-file` antes de `-f` ou conforme o comando completo documentado.
 
 ### Redis funciona no Docker, mas não localmente
 
-Dentro do Compose use `redis_host=redis` e `redis_port=6379`. O `compose.v1.yml` não publica a porta do Redis no computador. Para uma execução local sem Docker, inicie um Redis local e use `redis_host=localhost` com a porta correspondente.
+Dentro do Compose use `redis_host=redis` e `redis_port=6379`. Fora dele use `redis_host=localhost` e a porta publicada `6350`.
 
 ### Alterei o código, mas o container continua antigo
 
-O `compose.v1.yml` usa imagens prontas e não monta o código-fonte. Para receber uma imagem atualizada publicada no Docker Hub:
+Não existe bind mount. Reconstrua as imagens:
 
 ```bash
-docker compose -f compose.v1.yml pull
-docker compose -f compose.v1.yml up -d
+docker compose --env-file src/config/core/.env \
+  -f src/controller/compose.yml \
+  up -d --build api-agent agent
 ```
-
-Durante o desenvolvimento, reconstrua com `docker compose -f src/controller/compose.yml build`.
-
-### `bind: address already in use`
-
-Outra aplicação está usando uma porta publicada pelo Compose. Veja os containers ativos com `docker ps`. Para o Redis, prefira não publicar `6379:6379`, pois os serviços do projeto conseguem acessá-lo internamente em `redis:6379`.
 
 ### `invalid reference format`
 
