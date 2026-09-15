@@ -19,17 +19,11 @@ services:
 
   migration:
     environment: *app-environment
-    image: brayandevzn/agent_rh:migration
+    image: brayandevzn/agent_rh:migration-v1
     build:
       context: ../..
       dockerfile: src/controller/images/Dockerfile.migration
-    command:
-      - sh
-      - -c
-      - |
-        python -m src.service.db.migration make_migration_tables &&
-        python -m src.service.admin create_admin
-
+    
     depends_on:
       - redis
   
@@ -37,7 +31,7 @@ services:
 
   api-agent:
     environment: *app-environment
-    image: brayandevzn/agent_rh:api
+    image: brayandevzn/agent_rh:api-v1
     ports:
       - "650:8000"
     build:
@@ -47,10 +41,9 @@ services:
       - redis
       - migration
 
-    command: ["python", "-m", "uvicorn", "src.aplication.main:app","--host", "0.0.0.0","--port", "8000", "--reload"]
-
+   
   agent:
-    image: brayandevzn/agent_rh:agent
+    image: brayandevzn/agent_rh:agent-v1
     environment: *app-environment
     build:
       context: ../..
