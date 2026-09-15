@@ -52,5 +52,5 @@ jobs:
                python -m tests.functional.admin
                python -m tests.functional.vancancies
                pip install python-multipart
-               python-m tests.functional.resumes
+               python -m tests.functional.resumes
               
